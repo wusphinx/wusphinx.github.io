@@ -20,19 +20,23 @@
     var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick">
+  <meta name="description" content="老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机&#x2F;虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hello World">
-<meta property="og:url" content="http://wusphinx.github.io/2020/11/11/hello-world/index.html">
+<meta property="og:title" content="我是如何设计监控平台的">
+<meta property="og:url" content="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/index.html">
 <meta property="og:site_name" content="just for fun!">
-<meta property="og:description" content="Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick">
+<meta property="og:description" content="老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机&#x2F;虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-11-11T07:44:52.629Z">
+<meta property="og:image" content="http://wusphinx.github.io/images/prometheus.png">
+<meta property="og:image" content="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/alert_design.png">
+<meta property="article:published_time" content="2020-11-11T05:28:07.000Z">
 <meta property="article:modified_time" content="2020-11-11T07:44:52.629Z">
 <meta property="article:author" content="wusphinx">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://wusphinx.github.io/images/prometheus.png">
 
-<link rel="canonical" href="http://wusphinx.github.io/2020/11/11/hello-world/">
+<link rel="canonical" href="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/">
 
 
 <script id="page-configurations">
@@ -45,7 +49,7 @@
   };
 </script>
 
-  <title>Hello World | just for fun!</title>
+  <title>我是如何设计监控平台的 | just for fun!</title>
   
 
 
@@ -163,7 +167,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/11/hello-world/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -176,7 +180,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Hello World
+          我是如何设计监控平台的
         </h1>
 
         <div class="post-meta">
@@ -185,8 +189,9 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-11-11 15:44:52" itemprop="dateCreated datePublished" datetime="2020-11-11T15:44:52+08:00">2020-11-11</time>
+              <time title="创建时间：2020-11-11 13:28:07 / 修改时间：15:44:52" itemprop="dateCreated datePublished" datetime="2020-11-11T13:28:07+08:00">2020-11-11</time>
             </span>
 
           
@@ -202,14 +207,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>367</span>
+              <span>2.4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -221,19 +226,58 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+        <p>老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机/虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因如此，所以要将再有的监控（只是主机监控）全面转向Prometheus，这个理由，不可谓不充分。</p>
+<p>事情已经摆在眼前了，就是要基于Prometheus做一套监控平台，平台的作用是让监控可配置，在公司推广，让其它人能用起来。于是乎，开始折腾起Prometheus起来了，先来认识一下：</p>
+<blockquote>
+<p>Prometheus受启发于Google的Brogmon监控系统（相似的Kubernetes是从Google的Brog系统演变而来），从2012年开始由前Google工程师在Soundcloud以开源软件的形式进行研发，并且于2015年早期对外发布早期版本。2016年5月继Kubernetes之后成为第二个正式加入CNCF基金会的项目，同年6月正式发布1.0版本。2017年底发布了基于全新存储层的2.0版本，能更好地与容器平台、云平台配合。</p>
+</blockquote>
+<p>先盗一张官网的架构图</p>
+<p><img src="/images/prometheus.png" alt="prometheus"></p>
+<p>监控报警就是Prometheus Server</p>
+<ol>
+<li>收集目标exporter的数据</li>
+<li>判断阈值</li>
+<li>触发报警</li>
+<li>Alertmanager推送消息</li>
+</ol>
+<p>整体构架还是清晰明了的，从产品的核心需求来看，平台提供的能力要满足以下几点：</p>
+<ol>
+<li>自定义监控规则</li>
+<li>自定义报警规则</li>
+<li>自定义报警通知</li>
+<li>自定义报警频率</li>
+</ol>
+<p>由于产品目标用户的特殊性，服务部署在物理机/虚拟机/云主机上，单台主机会存在部署多个服务的情况，本质上是在做主机监控，但是要开放给业务开发使用，也就是业务要跟主机监控绑定。好了，拿到需求，要马上做吗？老司机都不急于动手，先想清楚一些问题：</p>
+<ol>
+<li>业务开发是否真实关心主机状况，例如cpu过载/内存过载等问题？</li>
+<li>主机监控及报警配置是否在存在大量差异化需求，如：a机器cpu利用率超过80%报警，b机器cpu利用率超过60报警？</li>
+<li>主机与服务是多对多的关系，这就会存在监控告的是别人的警，跟自己没关系的情况？<br><img src="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png" alt="node2app"></li>
+</ol>
+<p>经过了解，问题1并非由开发提出，但你要说不存在这样的需求也的确欠妥，毕竟目前主机监控是由运维在负责，现在运维希望将主机监控将由开发去负责；问题2，本来差异是比较小的，不过由于需求1的存在，的确存在这种可能；问题3，基本无解，由于问题1的存在，3也不算问题。</p>
+<p>无论如何，还是要实际使用一下Prometheus的，好在容器做强部署还是非常方便快捷的，不过又发现一些问题？</p>
+<ol>
+<li>prometheus规则配置目前只直接配置文件的形式，这对于业务平台来说并不太友好，如果支持关系型数据库也好呀</li>
+<li>主机与服务间的关系由内部第三方服务管理，主机目标配置目前还是以文件存ip的形式，这对于报警查询及配置来说，都不友好</li>
+<li>主机监控要考虑到不同环境，不同机房的统一管理，Prometheus该如何使用？</li>
+</ol>
+<p>针对以上问题，在一番斟酌后，我拿出了自己的设计：</p>
+<p><img src="/images/alert_design.png" alt="监控设计"></p>
+<p>红框部分即是需要参与编码服务或模块。</p>
+<ol>
+<li>alert-service: 跟前端交互的服务</li>
+<li>alert-engine: RESTful API服务</li>
+<li>alert-webhook: 用于接收alertmanager的webhook</li>
+<li>minio: 用于报警规则配置</li>
+<li>consul: Prometheus的服务发现</li>
+</ol>
+<p>首先，Prometheus需要联邦部署，这是一个树形结构，所有子Prometheus数据都上送到根Prometheus，这样，外部只需要与根Prometheus打交道即可，这解决了不同Prometheus集群统一管理的问题；</p>
+<p>引入consul是为了解决Prometheus的服务发现问题，所谓服务发现是为了让Prometheus发现自己需要从哪些目标抓数据，同时也可以很方便地给目标打上自己想要的标签，如机房，应用名等信息，如果不用consul，也可以使用文件配置，使用文件配置的问题在于需要人为处理，不容易与外部系统对接，不够灵活。</p>
+<p>引入minio是为了解决规则配置的问题，再有规则配置使用文件配置，也需要人手工操作，如果不使用minio这类文件系统，就需要ssh远程登录到配置所在主机，然后修改规则配置，不过在程序中使用ssh并不友好（也考虑过用git来管理规则配置，由于时间关系，这个方案并没有施行)</p>
+<p>alert那三个服务本可以合三为一的，为什么要拆成三个呢？<br>alert-webhook只是接收alertmanager报警然后将期扔到kafka中，如果只有一个服务的话，那么在需求迭代服务重启时，就可能会丢掉报警。<br>alert-engine单纯提供RESTful API服务，比较稳定，这样的好处是上层如何变，下层不用有较大改变或者只需要关注自身业务即可，如此，如些，告警的接收、发送、配置也就彻底解耦了。</p>
+<p>至于表的设计，由于依托于Prometheus，可以参照报警规则的结构体来建表，通知渠道根据自己的需求进行一些设计，最终需要与Prometheus保持一致，保证报警消息最终能发给目标用户。</p>
+<p>这套系统对于业务方而言，可能作用不大，因为主机报警这类信息对于业务方开发而言，他们即使收到消息，并不能解决问题，如果能有阈值触发时，保存现场，比如火焰图，对开发者而言应该是有帮助的。</p>
+<p>主机监控跟应用监控还是有很大区别的，目标用户在根本上是不一样的，当然，这两者也有结合的可能，比如日志聚合系统<a target="_blank" rel="noopener" href="https://grafana.com/oss/loki/">Loki</a>，师承Prometheus，如果跟运维监控相结合，有很大的想像空间，比如，可以统一监控的入口，信息聚合等。</p>
+<p>监控报警的意义最终是要能解决问题，从这个角度讲，我的这个设计目前只能暴露问题，解决问题需要接外部系统，比如，自动扩缩容、服务降级、问题跟踪等，最终能形成闭环，让问题能够真正得到处理以及最终解决，还有不少事情需要做。</p>
 
     </div>
 
@@ -268,10 +312,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/" rel="prev" title="我是如何设计监控平台的">
-      <i class="fa fa-chevron-left"></i> 我是如何设计监控平台的
+    <a href="/2020/11/05/%E5%90%8E%E6%B5%AA-GitOps/" rel="prev" title="后浪-GitOps">
+      <i class="fa fa-chevron-left"></i> 后浪-GitOps
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2020/11/11/hello-world/" rel="next" title="Hello World">
+      Hello World <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -331,7 +378,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Quick-Start"><span class="nav-number">1.</span> <span class="nav-text">Quick Start</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Create-a-new-post"><span class="nav-number">1.1.</span> <span class="nav-text">Create a new post</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Run-server"><span class="nav-number">1.2.</span> <span class="nav-text">Run server</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Generate-static-files"><span class="nav-number">1.3.</span> <span class="nav-text">Generate static files</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Deploy-to-remote-sites"><span class="nav-number">1.4.</span> <span class="nav-text">Deploy to remote sites</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -533,7 +579,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'issues',
       owner       : 'wusphinx',
       admin       : ['wusphinx'],
-      id          : 'bc8b448a9df0523e9ab3662bdb2ee821',
+      id          : '16ec50aa4bbc7a853417b1bece7d688d',
         language: '',
       distractionFreeMode: true
     });
