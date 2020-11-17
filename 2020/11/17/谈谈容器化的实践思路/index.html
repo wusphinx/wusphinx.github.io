@@ -20,23 +20,25 @@
     var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机&#x2F;虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因">
+  <meta name="description" content="老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。 彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台Rancher 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，Dock">
 <meta property="og:type" content="article">
-<meta property="og:title" content="我是如何设计监控平台的">
-<meta property="og:url" content="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/index.html">
+<meta property="og:title" content="谈谈容器化的实践思路">
+<meta property="og:url" content="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/index.html">
 <meta property="og:site_name" content="just for fun!">
-<meta property="og:description" content="老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机&#x2F;虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因">
+<meta property="og:description" content="老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。 彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台Rancher 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，Dock">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://wusphinx.github.io/images/prometheus.png">
-<meta property="og:image" content="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png">
-<meta property="og:image" content="http://wusphinx.github.io/images/alert_design.png">
-<meta property="article:published_time" content="2020-11-11T05:28:07.000Z">
+<meta property="og:image" content="http://wusphinx.github.io/images/g7cicd.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/caocaocicd.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/caocaocicd-paas.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/weiyicicd.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/dreamcicd.png">
+<meta property="article:published_time" content="2020-11-17T05:52:02.000Z">
 <meta property="article:modified_time" content="2020-11-17T08:15:20.647Z">
 <meta property="article:author" content="wusphinx">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://wusphinx.github.io/images/prometheus.png">
+<meta name="twitter:image" content="http://wusphinx.github.io/images/g7cicd.png">
 
-<link rel="canonical" href="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/">
+<link rel="canonical" href="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/">
 
 
 <script id="page-configurations">
@@ -49,7 +51,7 @@
   };
 </script>
 
-  <title>我是如何设计监控平台的 | just for fun!</title>
+  <title>谈谈容器化的实践思路 | just for fun!</title>
   
 
 
@@ -176,7 +178,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -189,7 +191,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          我是如何设计监控平台的
+          谈谈容器化的实践思路
         </h1>
 
         <div class="post-meta">
@@ -198,19 +200,13 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-11-11 13:28:07" itemprop="dateCreated datePublished" datetime="2020-11-11T13:28:07+08:00">2020-11-11</time>
+              <time title="创建时间：2020-11-17 13:52:02 / 修改时间：16:15:20" itemprop="dateCreated datePublished" datetime="2020-11-17T13:52:02+08:00">2020-11-17</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-17 16:15:20" itemprop="dateModified" datetime="2020-11-17T16:15:20+08:00">2020-11-17</time>
-              </span>
 
           
-            <span id="/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/" class="post-meta-item leancloud_visitors" data-flag-title="我是如何设计监控平台的" title="阅读次数">
+            <span id="/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" class="post-meta-item leancloud_visitors" data-flag-title="谈谈容器化的实践思路" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -222,14 +218,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.4k</span>
+              <span>3.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -241,58 +237,26 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机/虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因如此，所以要将再有的监控（只是主机监控）全面转向Prometheus，这个理由，不可谓不充分。</p>
-<p>事情已经摆在眼前了，就是要基于Prometheus做一套监控平台，平台的作用是让监控可配置，在公司推广，让其它人能用起来。于是乎，开始折腾起Prometheus起来了，先来认识一下：</p>
-<blockquote>
-<p>Prometheus受启发于Google的Brogmon监控系统（相似的Kubernetes是从Google的Brog系统演变而来），从2012年开始由前Google工程师在Soundcloud以开源软件的形式进行研发，并且于2015年早期对外发布早期版本。2016年5月继Kubernetes之后成为第二个正式加入CNCF基金会的项目，同年6月正式发布1.0版本。2017年底发布了基于全新存储层的2.0版本，能更好地与容器平台、云平台配合。</p>
-</blockquote>
-<p>先盗一张官网的架构图</p>
-<p><img src="/images/prometheus.png" alt="prometheus"></p>
-<p>监控报警就是Prometheus Server</p>
-<ol>
-<li>收集目标exporter的数据</li>
-<li>判断阈值</li>
-<li>触发报警</li>
-<li>Alertmanager推送消息</li>
-</ol>
-<p>整体构架还是清晰明了的，从产品的核心需求来看，平台提供的能力要满足以下几点：</p>
-<ol>
-<li>自定义监控规则</li>
-<li>自定义报警规则</li>
-<li>自定义报警通知</li>
-<li>自定义报警频率</li>
-</ol>
-<p>由于产品目标用户的特殊性，服务部署在物理机/虚拟机/云主机上，单台主机会存在部署多个服务的情况，本质上是在做主机监控，但是要开放给业务开发使用，也就是业务要跟主机监控绑定。好了，拿到需求，要马上做吗？老司机都不急于动手，先想清楚一些问题：</p>
-<ol>
-<li>业务开发是否真实关心主机状况，例如cpu过载/内存过载等问题？</li>
-<li>主机监控及报警配置是否在存在大量差异化需求，如：a机器cpu利用率超过80%报警，b机器cpu利用率超过60报警？</li>
-<li>主机与服务是多对多的关系，这就会存在监控告的是别人的警，跟自己没关系的情况？<br><img src="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png" alt="node2app"></li>
-</ol>
-<p>经过了解，问题1并非由开发提出，但你要说不存在这样的需求也的确欠妥，毕竟目前主机监控是由运维在负责，现在运维希望将主机监控将由开发去负责；问题2，本来差异是比较小的，不过由于需求1的存在，的确存在这种可能；问题3，基本无解，由于问题1的存在，3也不算问题。</p>
-<p>无论如何，还是要实际使用一下Prometheus的，好在容器做强部署还是非常方便快捷的，不过又发现一些问题？</p>
-<ol>
-<li>prometheus规则配置目前只直接配置文件的形式，这对于业务平台来说并不太友好，如果支持关系型数据库也好呀</li>
-<li>主机与服务间的关系由内部第三方服务管理，主机目标配置目前还是以文件存ip的形式，这对于报警查询及配置来说，都不友好</li>
-<li>主机监控要考虑到不同环境，不同机房的统一管理，Prometheus该如何使用？</li>
-</ol>
-<p>针对以上问题，在一番斟酌后，我拿出了自己的设计：</p>
-<p><img src="/images/alert_design.png" alt="监控设计"></p>
-<p>红框部分即是需要参与编码服务或模块。</p>
-<ol>
-<li>alert-service: 跟前端交互的服务</li>
-<li>alert-engine: RESTful API服务</li>
-<li>alert-webhook: 用于接收alertmanager的webhook</li>
-<li>minio: 用于报警规则配置</li>
-<li>consul: Prometheus的服务发现</li>
-</ol>
-<p>首先，Prometheus需要联邦部署，这是一个树形结构，所有子Prometheus数据都上送到根Prometheus，这样，外部只需要与根Prometheus打交道即可，这解决了不同Prometheus集群统一管理的问题；</p>
-<p>引入consul是为了解决Prometheus的服务发现问题，所谓服务发现是为了让Prometheus发现自己需要从哪些目标抓数据，同时也可以很方便地给目标打上自己想要的标签，如机房，应用名等信息，如果不用consul，也可以使用文件配置，使用文件配置的问题在于需要人为处理，不容易与外部系统对接，不够灵活。</p>
-<p>引入minio是为了解决规则配置的问题，再有规则配置使用文件配置，也需要人手工操作，如果不使用minio这类文件系统，就需要ssh远程登录到配置所在主机，然后修改规则配置，不过在程序中使用ssh并不友好（也考虑过用git来管理规则配置，由于时间关系，这个方案并没有施行)</p>
-<p>alert那三个服务本可以合三为一的，为什么要拆成三个呢？<br>alert-webhook只是接收alertmanager报警然后将期扔到kafka中，如果只有一个服务的话，那么在需求迭代服务重启时，就可能会丢掉报警。<br>alert-engine单纯提供RESTful API服务，比较稳定，这样的好处是上层如何变，下层不用有较大改变或者只需要关注自身业务即可，如此，如些，告警的接收、发送、配置也就彻底解耦了。</p>
-<p>至于表的设计，由于依托于Prometheus，可以参照报警规则的结构体来建表，通知渠道根据自己的需求进行一些设计，最终需要与Prometheus保持一致，保证报警消息最终能发给目标用户。</p>
-<p>这套系统对于业务方而言，可能作用不大，因为主机报警这类信息对于业务方开发而言，他们即使收到消息，并不能解决问题，如果能有阈值触发时，保存现场，比如火焰图，对开发者而言应该是有帮助的。</p>
-<p>主机监控跟应用监控还是有很大区别的，目标用户在根本上是不一样的，当然，这两者也有结合的可能，比如日志聚合系统<a target="_blank" rel="noopener" href="https://grafana.com/oss/loki/">Loki</a>，师承Prometheus，如果跟运维监控相结合，有很大的想像空间，比如，可以统一监控的入口，信息聚合等。</p>
-<p>监控报警的意义最终是要能解决问题，从这个角度讲，我的这个设计目前只能暴露问题，解决问题需要接外部系统，比如，自动扩缩容、服务降级、问题跟踪等，最终能形成闭环，让问题能够真正得到处理以及最终解决，还有不少事情需要做。</p>
+        <p>老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。</p>
+<p>彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台<a target="_blank" rel="noopener" href="https://docs.rancher.cn/">Rancher</a> 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，<code>Dockerfile</code>也不是开发自己写的，而是由<strong>项目初始化工具</strong>生成Dockerfile及<code>.gitlab-ci.yml</code>模板，然后经由CI/CD平台（用的是gitlab runner）编辑打包然后部署，整个流程如下所示：</p>
+<p><img src="/images/g7cicd.png" alt="g7"></p>
+<p>当时测试环境有<code>test</code>、<code>demo</code>等，都是相互隔离的，以提交时的分支名确定应该部署到哪个环境，比如当时时<code>test</code>分支，提交代码之后，应用就部署到<code>test</code>环境。这一套流程最大的好处是从提交代码开始，CI/CD就开始进行，且中间没有阻隔，所以开发测试的效率非常高，迭代很迅速，这段工作经历是我的DevOps思想的启蒙。</p>
+<p>来到杭州以后，第一份工作是在某操做容器化的推进，公司的技术栈以Java为主，推进容器化的动机是因为测试环境非常混乱，希望能够通过服务容器化，减少测试环境的机器，以达到节省成本的目的。（值得一提的是，当时还没有谈到推进容器化上生产这一步，对此我表示很惊讶）。当时测试环境的混乱情况到了何种地步，且我娓娓道来：</p>
+<p><img src="/images/caocaocicd.png" alt="caocaocicd"></p>
+<p>其中选择空闲机器这一步，因为机器不足分布不均的有关系，会出现张三将机器上某个应用A杀掉从而部署应用B；触发jenkins任务这一步经常会失败，因为这一步通常是由测试人员去完成的，编译打包过程出现一些问题也在所难免，最后又得找到开发；再说部署这一步，因为应用部署前需要将自己注册到网关，这一步因为某些原因经常出现异常，从而导致部署中断，此时测试人员又得找到运维……我描述的还只是当时所见到的一小部分，这种混乱主要原因在于开发、运维、测试的割裂，各自完成自己所做的那一部署然后就不管了，由于常见的部门墙等因素，跨部门合作也不算很容易，所以经常可见的项目延期上线，以我的角度，DevOps几近于没有，因为我没有看到合作，团队和部门都是各自为政，当然，这也并非个案。<br>在这种情况下要推进容器化并非易事（话又说回来，要是容易的话，也就没我什么事了）。出于个人经验，你首先想到的是改造CI/CD，将我在前司的研发流程带到公司。于是，从DevOps的受益者变成设计者，我首先完成了一套基于gitlab的CI/CD流程的demo，在团队内做了一次分享，不过可惜的是，当时团队成员觉得思路挺好，就是和现有以Jenkins为主的流程有些差异，不容易为人所接受。现有想想，当时也确实过于激进，毕竟我所接触到的同事，他们也只用过Jenkins，而且由于职能的原因，每个人相对只关心于自己的任务线。虽说有点受挫，不过笔者当时并没有放弃，而是找gitlab的维护人员，希望他们能够安装gitlab runner，不过得到的回复是：我们现在已经有了jenkins，没有必要也不能安装gitlab runner了……</p>
+<p><img src="/images/caocaocicd-paas.png" alt="caocaocicd-paas"></p>
+<p>没法，容器化总也要推进，根据当时的服务容器化的需求，当然，是直接上k8s的，我们首先做的一件事情是进行硬件资源评估，然后申请机器部署k8s集群，然后着手公司服务拓扑图，没想到在这一步遇到了难题，由于业务线各自为政，没有一个全局的服务依赖关系，无奈之下，经过商议，为了证明容器化的可用性，只好先将某一个业务线的服务部署到我们的k8s集群中，由于业务不熟悉，期间也花了不少时间在打包以及调试上。<br>其中渲染资源文件模板本来是可以用helm的chart包来替代的，不过自己写<code>deployment</code>、<code>service</code>、<code>ingress</code>模板其实也可以达到目的，只不过因为要部署到k8s的关系，需要另做一套平台来部署，其实并没做DevOps，只是硬生生的将原有的那一套流程搬到容器化中而已，所以，即使我离职已经一年有余，这一套流程听说也没有最终落地，实在令人唏嘘。</p>
+<p>前司某医的容器化之路也是坎坷，项目起步于2018年，容器化的动机据不完全了解是为了让公司跟上技术的发展潮流。公司技术栈同样以Java为主，不过还有少数php、golang以及python应用（当然，我用golang写的监控服务必须是容器化的）。整个流程如下所示</p>
+<p><img src="/images/weiyicicd.png" alt="weiyicicd"></p>
+<p>所谓个性化部署参数这里要特别解释一下：就是写一个<a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/">CRD</a>，这个CRD定义了一些参数如：appname、requests、limits、port等，简单说就是将deployment的参数以CRD的形式暴露出来，最后形成所下所示的k8s资源：</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">extensions/v1beta1</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">myapp</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">appname:</span> <span class="string">myapp</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"> <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line"> <span class="attr">template:</span></span><br><span class="line">   <span class="attr">spec:</span></span><br><span class="line">     <span class="attr">containers:</span></span><br><span class="line">       <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">myapp</span></span><br><span class="line">         <span class="attr">image:</span> <span class="string">myapp:5.0.3</span></span><br><span class="line">         <span class="attr">ports:</span></span><br><span class="line">         <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">         <span class="attr">resources:</span></span><br><span class="line">           <span class="attr">limits:</span></span><br><span class="line">             <span class="attr">memory:</span> <span class="string">600Mi</span></span><br><span class="line">             <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">           <span class="attr">requests:</span></span><br><span class="line">             <span class="attr">memory:</span> <span class="string">300Mi</span></span><br><span class="line">             <span class="attr">cpu:</span> <span class="string">500m</span></span><br><span class="line"><span class="string">……</span></span><br></pre></td></tr></table></figure>
+<p>如果定义一个服务也有三类资源如：<code>deployment</code>、<code>service</code>、<code>ingress</code>，那么这个CRD的作用就在于依据入参生成这三类资源并且部署到k8s集群中，由controller来保证每个应用，这三种资源都保持与CRD的定义一致。这也是容器化的一种思路，也是典型的CRD应用。<br>坦白说，就算不写CRD，也能达到这个目的，写CRD的目的是为了将应用模型进行统一，形式上就是尽可以将通用的资源参数暴露出来以供个性化使用，无奈之处在于还是在走容器化适配应用的路数，还不是将应用进行容器化适配，比如，dubbo的服务发现由zk提供，不过zk目前是在k8s外围，从功能上来讲，zk一定程序上跟k8s的service存在重复；应用内存使用是4G起步，虽说是为了保险起见，不过，这说明服务本身过重了，当然，硬件资源充足的情况下，这也不算是很大的问题；dubbo有自己的负载均衡，jvm可能也能限制资源的使用，作为容器化的拥趸，我不禁对java容器化的意义产生了一丝怀疑，诚然，k8s可以做hpa，可以自动重启，这些都是优势，但是到底真正的收益在哪里呢？<br>（截止文章发布之日，前司的容器化之路依然还在进行中）</p>
+<p>容器化固然只是一句口号而已，而这句口号，却常常伴随着DevOps这个词语，依我个人的浅见，DevOps是一种开放合作的文化，它打破了软件开发过程中的各个职能界限，最终是为了提高工作效率，从提高工作效率这个角度来看，DevOps在我的职业生涯中依旧少见。</p>
+<p>毫不掩饰的说，我对Jenkins有一丝偏见，因为我从事的公司中，使用Jenkins的方式无一例外，都是反DevOps的，设置流程的障碍，需要多方介入，但这种使用形成了一种习惯，我并不反对Jenkins，但如果使用Jenkins让事情变得更容易，我自然欣然接受，比如使用gitlab的CI/CD，就让人觉得很舒服，扩展性也挺好，这也是一个习惯问题。</p>
+<p>前司的容器化之路依旧在进行中，而我，也有自己对于容器化的想法，如下所示</p>
+<p><img src="/images/dreamcicd.png" alt="dreamcicd"></p>
+<p>以轻巧的<a target="_blank" rel="noopener" href="https://k3s.io/">k3s</a>作为CI平台，可以将gitlab runner接入进来，当然，每个应用有自己对于CI的需求，对于资源的需求，所以项目repo中也应该包含<code>.gitlab-ci.yml</code>、<code>Dockerfile</code>等，选择k3s来做CI的运行平台自然是为了利用k8s的资源调度和扩展性了；选择gitops是为了将CI/CD解耦，这样，就有DevOps内味了。</p>
+<p>自己的一点浅见，欢迎各位拍砖！</p>
 
     </div>
 
@@ -327,12 +291,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/11/05/%E5%90%8E%E6%B5%AA-GitOps/" rel="prev" title="后浪-GitOps">
-      <i class="fa fa-chevron-left"></i> 后浪-GitOps
+    <a href="/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/" rel="prev" title="我是如何设计监控平台的">
+      <i class="fa fa-chevron-left"></i> 我是如何设计监控平台的
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" rel="next" title="谈谈容器化的实践思路">
-      谈谈容器化的实践思路 <i class="fa fa-chevron-right"></i>
+    <a href="/2020/11/17/hello-world/" rel="next" title="Hello World">
+      Hello World <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -614,7 +578,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'issues',
       owner       : 'wusphinx',
       admin       : ['wusphinx'],
-      id          : '16ec50aa4bbc7a853417b1bece7d688d',
+      id          : '60897faf775925735449365b31e3ec7b',
         language: '',
       distractionFreeMode: true
     });
