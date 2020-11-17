@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://wusphinx.github.io/tags/index.html</loc>
+    
+    <lastmod>2020-11-17</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://wusphinx.github.io/2020/11/17/hello-world/</loc>
     
     <lastmod>2020-11-17</lastmod>
@@ -50,6 +57,13 @@
     
   </url>
   
+  <url>
+    <loc>http://wusphinx.github.io/categories/index.html</loc>
+    
+    <lastmod>2020-11-17</lastmod>
+    
+  </url>
+  
 
   <url>
     <loc>http://wusphinx.github.io/</loc>
@@ -59,6 +73,48 @@
   </url>
 
   
+  <url>
+    <loc>http://wusphinx.github.io/tags/DevOps/</loc>
+    <lastmod>2020-11-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://wusphinx.github.io/tags/k8s/</loc>
+    <lastmod>2020-11-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://wusphinx.github.io/tags/%E5%AE%B9%E5%99%A8%E5%8C%96/</loc>
+    <lastmod>2020-11-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
 
+  
+  <url>
+    <loc>http://wusphinx.github.io/categories/DevOps/</loc>
+    <lastmod>2020-11-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://wusphinx.github.io/categories/%E5%90%8E%E7%AB%AF/</loc>
+    <lastmod>2020-11-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://wusphinx.github.io/categories/k8s/</loc>
+    <lastmod>2020-11-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
   
 </urlset>
