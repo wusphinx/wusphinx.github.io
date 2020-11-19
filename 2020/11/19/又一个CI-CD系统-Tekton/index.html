@@ -20,24 +20,22 @@
     var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机&#x2F;虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因">
+  <meta name="description" content="Tekton是什么？ Tekton 是一个强大且灵活的 Kubernetes 原生开源框架，可用于创建持续集成和交付 (CI&#x2F;CD) 系统。该框架可让您跨多个云服务商或本地系统进行构建、测试和部署，而无需操心基础实现详情。  从定义可知，Tekton是一种新的CI&#x2F;CD系统，正如常见的Jenkins、Drone、GitLab CI做的事情一样，特殊之处在于它是生于Kubernetes，长于Kube">
 <meta property="og:type" content="article">
-<meta property="og:title" content="我是如何设计监控平台的">
-<meta property="og:url" content="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/index.html">
+<meta property="og:title" content="又一个CI&#x2F;CD系统-Tekton">
+<meta property="og:url" content="http://wusphinx.github.io/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/index.html">
 <meta property="og:site_name" content="just for fun!">
-<meta property="og:description" content="老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机&#x2F;虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因">
+<meta property="og:description" content="Tekton是什么？ Tekton 是一个强大且灵活的 Kubernetes 原生开源框架，可用于创建持续集成和交付 (CI&#x2F;CD) 系统。该框架可让您跨多个云服务商或本地系统进行构建、测试和部署，而无需操心基础实现详情。  从定义可知，Tekton是一种新的CI&#x2F;CD系统，正如常见的Jenkins、Drone、GitLab CI做的事情一样，特殊之处在于它是生于Kubernetes，长于Kube">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://wusphinx.github.io/images/prometheus.png">
-<meta property="og:image" content="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png">
-<meta property="og:image" content="http://wusphinx.github.io/images/alert_design.png">
-<meta property="article:published_time" content="2020-11-11T05:28:07.000Z">
+<meta property="og:image" content="http://wusphinx.github.io/images/tekton.png">
+<meta property="article:published_time" content="2020-11-19T01:23:38.000Z">
 <meta property="article:modified_time" content="2020-11-19T03:16:43.297Z">
 <meta property="article:author" content="wusphinx">
 <meta property="article:tag" content="DevOps">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://wusphinx.github.io/images/prometheus.png">
+<meta name="twitter:image" content="http://wusphinx.github.io/images/tekton.png">
 
-<link rel="canonical" href="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/">
+<link rel="canonical" href="http://wusphinx.github.io/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/">
 
 
 <script id="page-configurations">
@@ -50,7 +48,7 @@
   };
 </script>
 
-  <title>我是如何设计监控平台的 | just for fun!</title>
+  <title>又一个CI/CD系统-Tekton | just for fun!</title>
   
 
 
@@ -177,7 +175,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -190,7 +188,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          我是如何设计监控平台的
+          又一个CI/CD系统-Tekton
         </h1>
 
         <div class="post-meta">
@@ -199,28 +197,22 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-11-11 13:28:07" itemprop="dateCreated datePublished" datetime="2020-11-11T13:28:07+08:00">2020-11-11</time>
+              <time title="创建时间：2020-11-19 09:23:38 / 修改时间：11:16:43" itemprop="dateCreated datePublished" datetime="2020-11-19T09:23:38+08:00">2020-11-19</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-19 11:16:43" itemprop="dateModified" datetime="2020-11-19T11:16:43+08:00">2020-11-19</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%90%8E%E7%AB%AF/" itemprop="url" rel="index"><span itemprop="name">后端</span></a>
+                  <a href="/categories/DevOps/" itemprop="url" rel="index"><span itemprop="name">DevOps</span></a>
                 </span>
             </span>
 
           
-            <span id="/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/" class="post-meta-item leancloud_visitors" data-flag-title="我是如何设计监控平台的" title="阅读次数">
+            <span id="/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/" class="post-meta-item leancloud_visitors" data-flag-title="又一个CI/CD系统-Tekton" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -232,14 +224,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.4k</span>
+              <span>3.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -251,58 +243,47 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机/虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因如此，所以要将再有的监控（只是主机监控）全面转向Prometheus，这个理由，不可谓不充分。</p>
-<p>事情已经摆在眼前了，就是要基于Prometheus做一套监控平台，平台的作用是让监控可配置，在公司推广，让其它人能用起来。于是乎，开始折腾起Prometheus起来了，先来认识一下：</p>
-<blockquote>
-<p>Prometheus受启发于Google的Brogmon监控系统（相似的Kubernetes是从Google的Brog系统演变而来），从2012年开始由前Google工程师在Soundcloud以开源软件的形式进行研发，并且于2015年早期对外发布早期版本。2016年5月继Kubernetes之后成为第二个正式加入CNCF基金会的项目，同年6月正式发布1.0版本。2017年底发布了基于全新存储层的2.0版本，能更好地与容器平台、云平台配合。</p>
+        <h1 id="Tekton是什么？"><a href="#Tekton是什么？" class="headerlink" title="Tekton是什么？"></a>Tekton是什么？</h1><blockquote>
+<p>Tekton 是一个强大且灵活的 Kubernetes 原生开源框架，可用于创建持续集成和交付 (CI/CD) 系统。该框架可让您跨多个云服务商或本地系统进行构建、测试和部署，而无需操心基础实现详情。</p>
 </blockquote>
-<p>先盗一张官网的架构图</p>
-<p><img src="/images/prometheus.png" alt="prometheus"></p>
-<p>监控报警就是Prometheus Server</p>
-<ol>
-<li>收集目标exporter的数据</li>
-<li>判断阈值</li>
-<li>触发报警</li>
-<li>Alertmanager推送消息</li>
-</ol>
-<p>整体构架还是清晰明了的，从产品的核心需求来看，平台提供的能力要满足以下几点：</p>
-<ol>
-<li>自定义监控规则</li>
-<li>自定义报警规则</li>
-<li>自定义报警通知</li>
-<li>自定义报警频率</li>
-</ol>
-<p>由于产品目标用户的特殊性，服务部署在物理机/虚拟机/云主机上，单台主机会存在部署多个服务的情况，本质上是在做主机监控，但是要开放给业务开发使用，也就是业务要跟主机监控绑定。好了，拿到需求，要马上做吗？老司机都不急于动手，先想清楚一些问题：</p>
-<ol>
-<li>业务开发是否真实关心主机状况，例如cpu过载/内存过载等问题？</li>
-<li>主机监控及报警配置是否在存在大量差异化需求，如：a机器cpu利用率超过80%报警，b机器cpu利用率超过60报警？</li>
-<li>主机与服务是多对多的关系，这就会存在监控告的是别人的警，跟自己没关系的情况？<br><img src="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png" alt="node2app"></li>
-</ol>
-<p>经过了解，问题1并非由开发提出，但你要说不存在这样的需求也的确欠妥，毕竟目前主机监控是由运维在负责，现在运维希望将主机监控将由开发去负责；问题2，本来差异是比较小的，不过由于需求1的存在，的确存在这种可能；问题3，基本无解，由于问题1的存在，3也不算问题。</p>
-<p>无论如何，还是要实际使用一下Prometheus的，好在容器做强部署还是非常方便快捷的，不过又发现一些问题？</p>
-<ol>
-<li>prometheus规则配置目前只直接配置文件的形式，这对于业务平台来说并不太友好，如果支持关系型数据库也好呀</li>
-<li>主机与服务间的关系由内部第三方服务管理，主机目标配置目前还是以文件存ip的形式，这对于报警查询及配置来说，都不友好</li>
-<li>主机监控要考虑到不同环境，不同机房的统一管理，Prometheus该如何使用？</li>
-</ol>
-<p>针对以上问题，在一番斟酌后，我拿出了自己的设计：</p>
-<p><img src="/images/alert_design.png" alt="监控设计"></p>
-<p>红框部分即是需要参与编码服务或模块。</p>
-<ol>
-<li>alert-service: 跟前端交互的服务</li>
-<li>alert-engine: RESTful API服务</li>
-<li>alert-webhook: 用于接收alertmanager的webhook</li>
-<li>minio: 用于报警规则配置</li>
-<li>consul: Prometheus的服务发现</li>
-</ol>
-<p>首先，Prometheus需要联邦部署，这是一个树形结构，所有子Prometheus数据都上送到根Prometheus，这样，外部只需要与根Prometheus打交道即可，这解决了不同Prometheus集群统一管理的问题；</p>
-<p>引入consul是为了解决Prometheus的服务发现问题，所谓服务发现是为了让Prometheus发现自己需要从哪些目标抓数据，同时也可以很方便地给目标打上自己想要的标签，如机房，应用名等信息，如果不用consul，也可以使用文件配置，使用文件配置的问题在于需要人为处理，不容易与外部系统对接，不够灵活。</p>
-<p>引入minio是为了解决规则配置的问题，再有规则配置使用文件配置，也需要人手工操作，如果不使用minio这类文件系统，就需要ssh远程登录到配置所在主机，然后修改规则配置，不过在程序中使用ssh并不友好（也考虑过用git来管理规则配置，由于时间关系，这个方案并没有施行)</p>
-<p>alert那三个服务本可以合三为一的，为什么要拆成三个呢？<br>alert-webhook只是接收alertmanager报警然后将期扔到kafka中，如果只有一个服务的话，那么在需求迭代服务重启时，就可能会丢掉报警。<br>alert-engine单纯提供RESTful API服务，比较稳定，这样的好处是上层如何变，下层不用有较大改变或者只需要关注自身业务即可，如此，如些，告警的接收、发送、配置也就彻底解耦了。</p>
-<p>至于表的设计，由于依托于Prometheus，可以参照报警规则的结构体来建表，通知渠道根据自己的需求进行一些设计，最终需要与Prometheus保持一致，保证报警消息最终能发给目标用户。</p>
-<p>这套系统对于业务方而言，可能作用不大，因为主机报警这类信息对于业务方开发而言，他们即使收到消息，并不能解决问题，如果能有阈值触发时，保存现场，比如火焰图，对开发者而言应该是有帮助的。</p>
-<p>主机监控跟应用监控还是有很大区别的，目标用户在根本上是不一样的，当然，这两者也有结合的可能，比如日志聚合系统<a target="_blank" rel="noopener" href="https://grafana.com/oss/loki/">Loki</a>，师承Prometheus，如果跟运维监控相结合，有很大的想像空间，比如，可以统一监控的入口，信息聚合等。</p>
-<p>监控报警的意义最终是要能解决问题，从这个角度讲，我的这个设计目前只能暴露问题，解决问题需要接外部系统，比如，自动扩缩容、服务降级、问题跟踪等，最终能形成闭环，让问题能够真正得到处理以及最终解决，还有不少事情需要做。</p>
+<p>从定义可知，Tekton是一种新的CI/CD系统，正如常见的Jenkins、Drone、GitLab CI做的事情一样，特殊之处在于它是生于Kubernetes，长于Kubernetes。</p>
+<h1 id="安装Tekton"><a href="#安装Tekton" class="headerlink" title="安装Tekton"></a>安装Tekton</h1><p>因为Tekton运行环境依赖于k8s，所以我们首先必须得有一个k8s环境，笔者本地使用的是minikube，如下本地启动一个k8s</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">minikube start -p k8s -v10 --image-mirror-country cn --iso-url&#x3D;https:&#x2F;&#x2F;kubernetes.oss-cn-hangzhou.aliyuncs.com&#x2F;minikube&#x2F;iso&#x2F;minikube-v1.6.0.iso  --image-repository registry.cn-hangzhou.aliyuncs.com&#x2F;google_containers --vm-driver&#x3D;hyperkit --registry-mirror&#x3D;https:&#x2F;&#x2F;dq4otk2m.mirror.aliyuncs.com --kubernetes-version&#x3D;1.16.0</span><br></pre></td></tr></table></figure>
+<p>集群启动以后就可以安装Tekton，按照官网的描述，可按如下安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply --filename https:&#x2F;&#x2F;storage.googleapis.com&#x2F;tekton-releases&#x2F;pipeline&#x2F;latest&#x2F;release.yaml</span><br></pre></td></tr></table></figure>
+<p>不过，因于Tekton需要依赖众多gcr站点镜像，安装过程需要先预先准备好这些镜像，笔者使用github的action将这些镜像转移到了阿里云的镜像中心，并将Tekton的安装文件重新换成了阿里云的镜像地址，项目地址为：</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/wusphinx/tektoncd-cn">https://github.com/wusphinx/tektoncd-cn</a></p>
+<p>国内码云地址为：</p>
+<p><a target="_blank" rel="noopener" href="https://gitee.com/wucentaur/tektoncd-cn">https://gitee.com/wucentaur/tektoncd-cn</a></p>
+<p>项目目录如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">├── LICENSE</span><br><span class="line">├── README.md</span><br><span class="line">├── example</span><br><span class="line">│   ├── pipelineresource.yaml</span><br><span class="line">│   ├── task-test.yaml</span><br><span class="line">│   └── taskrun.yaml</span><br><span class="line">└── tekton</span><br><span class="line">    ├── tekton-dashboard-release.yaml</span><br><span class="line">    └── tekton.yaml</span><br></pre></td></tr></table></figure>
+<p>如此，可以通过<code>kubectl apply -f tekton/</code>完成安装，顺带也把Tekton的dashboard也安装了，检查安装状态</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ kubectl get pods -n tekton-pipelines</span><br><span class="line">NAME                                          READY   STATUS    RESTARTS   AGE</span><br><span class="line">tekton-dashboard-5dcb9688bd-pls8b             1&#x2F;1     Running   1          18h</span><br><span class="line">tekton-pipelines-controller-6564b64ff-7gwbc   1&#x2F;1     Running   1          18h</span><br><span class="line">tekton-pipelines-webhook-5d6b9646b9-mr7jl     1&#x2F;1     Running   1          18h</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><p>既然是CI/CD系统，那流水线一定是必不可少的，前面说到Tekton生于k8s，所以才有了CRD定义的流水线，我们先定义获取代码仓库的资源</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PipelineResource</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">tekton-example</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">params:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">url</span></span><br><span class="line">      <span class="attr">value:</span> <span class="string">https://github.com/wusphinx/multistage</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">revision</span></span><br><span class="line">      <span class="attr">value:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure>
+<p>简洁明了，如果代码仓库是gitlab，用gitlab ci来做，这一步是隐式的，用Jenkins的话，没有与gitlab集成的情况下，也需要显示配置。<br>定义流水线任务（只是为了演示，当然你可以自定义其它任务）</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Task</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">repo</span></span><br><span class="line">      <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">steps:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">run-test</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">golang:1.13-alpine</span></span><br><span class="line">    <span class="attr">workingDir:</span> <span class="string">/workspace/repo</span></span><br><span class="line">    <span class="attr">env:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;GO111MODULE&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;GOPROXY&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">&quot;https://goproxy.cn,direct&quot;</span></span><br><span class="line">    <span class="attr">command:</span> [<span class="string">&quot;go&quot;</span>]</span><br><span class="line">    <span class="attr">args:</span> [<span class="string">&quot;mod&quot;</span>, <span class="string">&quot;download&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>任务的核心是对<em>某个</em>golang项目执行<code>go mod download</code>操作，<code>PipelineResource</code>跟<code>Task</code>缺少一纽带联系起来，这个纽带就是<code>TaskRun</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">TaskRun</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">testrun</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">taskRef:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">repo</span></span><br><span class="line">      <span class="attr">resourceRef:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">tekton-example</span></span><br></pre></td></tr></table></figure>
+<p>示例都准备好了，可以直接执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ kubectl apply -f example&#x2F;</span><br><span class="line">pipelineresource.tekton.dev&#x2F;tekton-example created</span><br><span class="line">task.tekton.dev&#x2F;test created</span><br><span class="line">taskrun.tekton.dev&#x2F;testrun created</span><br></pre></td></tr></table></figure>
+<p>可通过dashboard查看任务执行结果如下所示：</p>
+<p><img src="/images/tekton.png" alt="tekton"></p>
+<p>回头来看资源的作用就很容易理解了</p>
+<ul>
+<li>PipelineResource： 流水线的资源，示例就是指代码仓库了</li>
+<li>Task： 流水线要执行的任务与步骤定义</li>
+<li>TaskRun：将资源与任务做关联并执行</li>
+</ul>
+<p>这么看若要完成一个流水线，至少要定义三类资源才行，这样代码跟CI/CD是分离的，需要在Tekton平台上做这些配置。当然因为Tekton本身就在k8s集群中，可以用尽k8s的资源调度优势，不过gitlab runner也可以安装在k8s中，从使用体验上来讲Tekton的优势并不明显，不过，这也是因为gitlab runner与gitlab是一家天然集成的缘故，Tekton的方式就是在做解耦，并无不妥。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>如此看来，Tekton是另一个CI/CD系统，抽象粒度很细，从实际使用效果来看并未带来明显的好处。最大的优势在于原生支持k8s，不过其它CI/CD平台也在向k8s靠拢，这个优势也并不十分突出。一点浅见，欢迎拍砖。</p>
+<p>参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://cloud.google.com/tekton">https://cloud.google.com/tekton</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.infoq.cn/article/arayxto19bd6avbmxfqz">https://www.infoq.cn/article/arayxto19bd6avbmxfqz</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/">https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/</a></li>
+</ul>
 
     </div>
 
@@ -341,12 +322,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/11/05/%E5%90%8E%E6%B5%AA-GitOps/" rel="prev" title="后浪-GitOps">
-      <i class="fa fa-chevron-left"></i> 后浪-GitOps
+    <a href="/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" rel="prev" title="谈谈容器化的实践思路">
+      <i class="fa fa-chevron-left"></i> 谈谈容器化的实践思路
     </a></div>
       <div class="post-nav-item">
-    <a href="/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" rel="next" title="谈谈容器化的实践思路">
-      谈谈容器化的实践思路 <i class="fa fa-chevron-right"></i>
+    <a href="/2020/11/19/hello-world/" rel="next" title="Hello World">
+      Hello World <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -407,6 +388,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Tekton%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Tekton是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Tekton"><span class="nav-number">2.</span> <span class="nav-text">安装Tekton</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">结论</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -638,7 +620,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'issues',
       owner       : 'wusphinx',
       admin       : ['wusphinx'],
-      id          : '16ec50aa4bbc7a853417b1bece7d688d',
+      id          : 'b04b1b90de3a75109450fbeb9b31bb14',
         language: '',
       distractionFreeMode: true
     });

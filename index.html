@@ -167,7 +167,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/17/hello-world/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/19/hello-world/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -181,7 +181,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/11/17/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
+            <a href="/2020/11/19/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
         </h2>
 
         <div class="post-meta">
@@ -191,11 +191,11 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-11-17 16:33:35" itemprop="dateCreated datePublished" datetime="2020-11-17T16:33:35+08:00">2020-11-17</time>
+              <time title="创建时间：2020-11-19 11:16:43" itemprop="dateCreated datePublished" datetime="2020-11-19T11:16:43+08:00">2020-11-19</time>
             </span>
 
           
-            <span id="/2020/11/17/hello-world/" class="post-meta-item leancloud_visitors" data-flag-title="Hello World" title="阅读次数">
+            <span id="/2020/11/19/hello-world/" class="post-meta-item leancloud_visitors" data-flag-title="Hello World" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -258,6 +258,135 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wusphinx">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="just for fun!">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/" class="post-title-link" itemprop="url">又一个CI/CD系统-Tekton</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-11-19 09:23:38 / 修改时间：11:16:43" itemprop="dateCreated datePublished" datetime="2020-11-19T09:23:38+08:00">2020-11-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DevOps/" itemprop="url" rel="index"><span itemprop="name">DevOps</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/" class="post-meta-item leancloud_visitors" data-flag-title="又一个CI/CD系统-Tekton" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="Tekton是什么？"><a href="#Tekton是什么？" class="headerlink" title="Tekton是什么？"></a>Tekton是什么？</h1><blockquote>
+<p>Tekton 是一个强大且灵活的 Kubernetes 原生开源框架，可用于创建持续集成和交付 (CI/CD) 系统。该框架可让您跨多个云服务商或本地系统进行构建、测试和部署，而无需操心基础实现详情。</p>
+</blockquote>
+<p>从定义可知，Tekton是一种新的CI/CD系统，正如常见的Jenkins、Drone、GitLab CI做的事情一样，特殊之处在于它是生于Kubernetes，长于Kubernetes。</p>
+<h1 id="安装Tekton"><a href="#安装Tekton" class="headerlink" title="安装Tekton"></a>安装Tekton</h1><p>因为Tekton运行环境依赖于k8s，所以我们首先必须得有一个k8s环境，笔者本地使用的是minikube，如下本地启动一个k8s</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">minikube start -p k8s -v10 --image-mirror-country cn --iso-url&#x3D;https:&#x2F;&#x2F;kubernetes.oss-cn-hangzhou.aliyuncs.com&#x2F;minikube&#x2F;iso&#x2F;minikube-v1.6.0.iso  --image-repository registry.cn-hangzhou.aliyuncs.com&#x2F;google_containers --vm-driver&#x3D;hyperkit --registry-mirror&#x3D;https:&#x2F;&#x2F;dq4otk2m.mirror.aliyuncs.com --kubernetes-version&#x3D;1.16.0</span><br></pre></td></tr></table></figure>
+<p>集群启动以后就可以安装Tekton，按照官网的描述，可按如下安装</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply --filename https:&#x2F;&#x2F;storage.googleapis.com&#x2F;tekton-releases&#x2F;pipeline&#x2F;latest&#x2F;release.yaml</span><br></pre></td></tr></table></figure>
+<p>不过，因于Tekton需要依赖众多gcr站点镜像，安装过程需要先预先准备好这些镜像，笔者使用github的action将这些镜像转移到了阿里云的镜像中心，并将Tekton的安装文件重新换成了阿里云的镜像地址，项目地址为：</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/wusphinx/tektoncd-cn">https://github.com/wusphinx/tektoncd-cn</a></p>
+<p>国内码云地址为：</p>
+<p><a target="_blank" rel="noopener" href="https://gitee.com/wucentaur/tektoncd-cn">https://gitee.com/wucentaur/tektoncd-cn</a></p>
+<p>项目目录如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">├── LICENSE</span><br><span class="line">├── README.md</span><br><span class="line">├── example</span><br><span class="line">│   ├── pipelineresource.yaml</span><br><span class="line">│   ├── task-test.yaml</span><br><span class="line">│   └── taskrun.yaml</span><br><span class="line">└── tekton</span><br><span class="line">    ├── tekton-dashboard-release.yaml</span><br><span class="line">    └── tekton.yaml</span><br></pre></td></tr></table></figure>
+<p>如此，可以通过<code>kubectl apply -f tekton/</code>完成安装，顺带也把Tekton的dashboard也安装了，检查安装状态</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ kubectl get pods -n tekton-pipelines</span><br><span class="line">NAME                                          READY   STATUS    RESTARTS   AGE</span><br><span class="line">tekton-dashboard-5dcb9688bd-pls8b             1&#x2F;1     Running   1          18h</span><br><span class="line">tekton-pipelines-controller-6564b64ff-7gwbc   1&#x2F;1     Running   1          18h</span><br><span class="line">tekton-pipelines-webhook-5d6b9646b9-mr7jl     1&#x2F;1     Running   1          18h</span><br></pre></td></tr></table></figure>
+
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><p>既然是CI/CD系统，那流水线一定是必不可少的，前面说到Tekton生于k8s，所以才有了CRD定义的流水线，我们先定义获取代码仓库的资源</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PipelineResource</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">tekton-example</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">params:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">url</span></span><br><span class="line">      <span class="attr">value:</span> <span class="string">https://github.com/wusphinx/multistage</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">revision</span></span><br><span class="line">      <span class="attr">value:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure>
+<p>简洁明了，如果代码仓库是gitlab，用gitlab ci来做，这一步是隐式的，用Jenkins的话，没有与gitlab集成的情况下，也需要显示配置。<br>定义流水线任务（只是为了演示，当然你可以自定义其它任务）</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Task</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">repo</span></span><br><span class="line">      <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">steps:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">run-test</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">golang:1.13-alpine</span></span><br><span class="line">    <span class="attr">workingDir:</span> <span class="string">/workspace/repo</span></span><br><span class="line">    <span class="attr">env:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;GO111MODULE&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;GOPROXY&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">&quot;https://goproxy.cn,direct&quot;</span></span><br><span class="line">    <span class="attr">command:</span> [<span class="string">&quot;go&quot;</span>]</span><br><span class="line">    <span class="attr">args:</span> [<span class="string">&quot;mod&quot;</span>, <span class="string">&quot;download&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>任务的核心是对<em>某个</em>golang项目执行<code>go mod download</code>操作，<code>PipelineResource</code>跟<code>Task</code>缺少一纽带联系起来，这个纽带就是<code>TaskRun</code></p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">TaskRun</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">testrun</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">taskRef:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">repo</span></span><br><span class="line">      <span class="attr">resourceRef:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">tekton-example</span></span><br></pre></td></tr></table></figure>
+<p>示例都准备好了，可以直接执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ kubectl apply -f example&#x2F;</span><br><span class="line">pipelineresource.tekton.dev&#x2F;tekton-example created</span><br><span class="line">task.tekton.dev&#x2F;test created</span><br><span class="line">taskrun.tekton.dev&#x2F;testrun created</span><br></pre></td></tr></table></figure>
+<p>可通过dashboard查看任务执行结果如下所示：</p>
+<p><img src="/images/tekton.png" alt="tekton"></p>
+<p>回头来看资源的作用就很容易理解了</p>
+<ul>
+<li>PipelineResource： 流水线的资源，示例就是指代码仓库了</li>
+<li>Task： 流水线要执行的任务与步骤定义</li>
+<li>TaskRun：将资源与任务做关联并执行</li>
+</ul>
+<p>这么看若要完成一个流水线，至少要定义三类资源才行，这样代码跟CI/CD是分离的，需要在Tekton平台上做这些配置。当然因为Tekton本身就在k8s集群中，可以用尽k8s的资源调度优势，不过gitlab runner也可以安装在k8s中，从使用体验上来讲Tekton的优势并不明显，不过，这也是因为gitlab runner与gitlab是一家天然集成的缘故，Tekton的方式就是在做解耦，并无不妥。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>如此看来，Tekton是另一个CI/CD系统，抽象粒度很细，从实际使用效果来看并未带来明显的好处。最大的优势在于原生支持k8s，不过其它CI/CD平台也在向k8s靠拢，这个优势也并不十分突出。一点浅见，欢迎拍砖。</p>
+<p>参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://cloud.google.com/tekton">https://cloud.google.com/tekton</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.infoq.cn/article/arayxto19bd6avbmxfqz">https://www.infoq.cn/article/arayxto19bd6avbmxfqz</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/">https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -281,10 +410,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-11-17 13:52:02 / 修改时间：16:33:35" itemprop="dateCreated datePublished" datetime="2020-11-17T13:52:02+08:00">2020-11-17</time>
+              <time title="创建时间：2020-11-17 13:52:02" itemprop="dateCreated datePublished" datetime="2020-11-17T13:52:02+08:00">2020-11-17</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-19 11:16:43" itemprop="dateModified" datetime="2020-11-19T11:16:43+08:00">2020-11-19</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -397,7 +532,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-17 16:33:35" itemprop="dateModified" datetime="2020-11-17T16:33:35+08:00">2020-11-17</time>
+                <time title="修改时间：2020-11-19 11:16:43" itemprop="dateModified" datetime="2020-11-19T11:16:43+08:00">2020-11-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -543,7 +678,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-17 16:33:35" itemprop="dateModified" datetime="2020-11-17T16:33:35+08:00">2020-11-17</time>
+                <time title="修改时间：2020-11-19 11:16:43" itemprop="dateModified" datetime="2020-11-19T11:16:43+08:00">2020-11-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -737,7 +872,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-11-17 16:33:35" itemprop="dateModified" datetime="2020-11-17T16:33:35+08:00">2020-11-17</time>
+                <time title="修改时间：2020-11-19 11:16:43" itemprop="dateModified" datetime="2020-11-19T11:16:43+08:00">2020-11-19</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -985,7 +1120,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">6</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1040,12 +1175,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">21k</span>
+    <span title="站点总字数">25k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">19 分钟</span>
+    <span title="站点阅读时长">22 分钟</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
