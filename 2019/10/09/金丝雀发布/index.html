@@ -20,20 +20,20 @@
     var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="IaC是什么？IaC即Infrastructure as Code的简称，通常提到基础设施，会想到虚拟机、服务器、数据库、防火墙等词汇，在k8s一统江湖、云原生大行其道的当下，基础设施这一层已悄然发生的变化，在我的理解里k8s已隐隐成为未来的基础设施了。  应用 容器 k8s 虚拟机 物理机  IaC能带来什么好处？前面提到k8s是基础设施，那基础设施始终是为应用服务的。当一个应用开发人员开发完毕">
+  <meta name="description" content="什么是金丝雀发布？  相传上个世纪煤矿工人在作业时，为了避免瓦斯中毒会随身带一只金丝雀下到矿洞，由于金丝雀对二氧化碳非常敏感，所以看到金丝雀昏厥的时候矿工们就知道该逃生了。  金丝雀发布带来的好处是显而易见的，从上线的角度讲，每一次上线发布都是有风险的，如何最小化风险，当然不是不上线，逐步验证，直到确认无误再逐步全量更新，这就是金丝雀发布的意义，我们来看一个简单的demo 源码以message内容">
 <meta property="og:type" content="article">
-<meta property="og:title" content="为什么IaC是个好主意？">
-<meta property="og:url" content="http://wusphinx.github.io/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/index.html">
+<meta property="og:title" content="金丝雀发布">
+<meta property="og:url" content="http://wusphinx.github.io/2019/10/09/%E9%87%91%E4%B8%9D%E9%9B%80%E5%8F%91%E5%B8%83/index.html">
 <meta property="og:site_name" content="just for fun!">
-<meta property="og:description" content="IaC是什么？IaC即Infrastructure as Code的简称，通常提到基础设施，会想到虚拟机、服务器、数据库、防火墙等词汇，在k8s一统江湖、云原生大行其道的当下，基础设施这一层已悄然发生的变化，在我的理解里k8s已隐隐成为未来的基础设施了。  应用 容器 k8s 虚拟机 物理机  IaC能带来什么好处？前面提到k8s是基础设施，那基础设施始终是为应用服务的。当一个应用开发人员开发完毕">
+<meta property="og:description" content="什么是金丝雀发布？  相传上个世纪煤矿工人在作业时，为了避免瓦斯中毒会随身带一只金丝雀下到矿洞，由于金丝雀对二氧化碳非常敏感，所以看到金丝雀昏厥的时候矿工们就知道该逃生了。  金丝雀发布带来的好处是显而易见的，从上线的角度讲，每一次上线发布都是有风险的，如何最小化风险，当然不是不上线，逐步验证，直到确认无误再逐步全量更新，这就是金丝雀发布的意义，我们来看一个简单的demo 源码以message内容">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-11-29T10:43:55.000Z">
+<meta property="article:published_time" content="2019-10-09T08:46:21.000Z">
 <meta property="article:modified_time" content="2020-11-29T19:02:40.396Z">
 <meta property="article:author" content="wusphinx">
 <meta property="article:tag" content="DevOps">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://wusphinx.github.io/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/">
+<link rel="canonical" href="http://wusphinx.github.io/2019/10/09/%E9%87%91%E4%B8%9D%E9%9B%80%E5%8F%91%E5%B8%83/">
 
 
 <script id="page-configurations">
@@ -46,7 +46,7 @@
   };
 </script>
 
-  <title>为什么IaC是个好主意？ | just for fun!</title>
+  <title>金丝雀发布 | just for fun!</title>
   
 
 
@@ -174,7 +174,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2019/10/09/%E9%87%91%E4%B8%9D%E9%9B%80%E5%8F%91%E5%B8%83/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -187,7 +187,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          为什么IaC是个好主意？
+          金丝雀发布
         </h1>
 
         <div class="post-meta">
@@ -197,7 +197,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-11-29 18:43:55" itemprop="dateCreated datePublished" datetime="2020-11-29T18:43:55+08:00">2020-11-29</time>
+              <time title="创建时间：2019-10-09 16:46:21" itemprop="dateCreated datePublished" datetime="2019-10-09T16:46:21+08:00">2019-10-09</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -217,7 +217,7 @@
             </span>
 
           
-            <span id="/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/" class="post-meta-item leancloud_visitors" data-flag-title="为什么IaC是个好主意？" title="阅读次数">
+            <span id="/2019/10/09/%E9%87%91%E4%B8%9D%E9%9B%80%E5%8F%91%E5%B8%83/" class="post-meta-item leancloud_visitors" data-flag-title="金丝雀发布" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -229,7 +229,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>1.7k</span>
+              <span>2.3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -248,36 +248,34 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="IaC是什么？"><a href="#IaC是什么？" class="headerlink" title="IaC是什么？"></a>IaC是什么？</h1><p>IaC即Infrastructure as Code的简称，通常提到基础设施，会想到虚拟机、服务器、数据库、防火墙等词汇，在k8s一统江湖、云原生大行其道的当下，基础设施这一层已悄然发生的变化，在我的理解里k8s已隐隐成为未来的基础设施了。</p>
-<ul>
-<li>应用</li>
-<li>容器</li>
-<li>k8s</li>
-<li>虚拟机</li>
-<li>物理机</li>
-</ul>
-<h1 id="IaC能带来什么好处？"><a href="#IaC能带来什么好处？" class="headerlink" title="IaC能带来什么好处？"></a>IaC能带来什么好处？</h1><p>前面提到k8s是基础设施，那基础设施始终是为应用服务的。当一个应用开发人员开发完毕以后，部署这一步在以前是由运维完成的，运维的操作步骤无外乎以下几点：</p>
-<ol>
-<li>拉取代码</li>
-<li>编译打包</li>
-<li>配置部署</li>
-<li>交付测试</li>
-</ol>
-<p>这是以前套路，即使放到现在，也有不少人在用，就笔者的从业经验来说，不少开发人员并不知道自己的应用在生产是如何部署运行的。这在一定情况下并不是一件坏事，因为各尽其职，开发完成功能，运维负责部署，测试负责验证，每一个环节都是一个gap。可以试想以下场景：</p>
-<ol>
-<li>传统部署或者可以说是非容器化部署，因为生产某服务demo负载过高，需要进行水平扩容，增加实例，将实例注册到负载均衡服务器，然后使扩容生效。规范一点，需要提工单，有操作日志/记录，比较糙或者是紧急的情况下可能只是口头描述，然后线上操，这是完全有可能的，当然，如果要缩容，需要进行反向操作。</li>
-<li>如果服务部署是容器化的，容器化解决的是环境一致的问题，既然是解决环境一致的问题，那在开发环境当然也应该容器化，比较奇怪的是，因为职能的不同，不少开发并不懂容器化，服务项目Repo里面自然也不包括<code>Dockerfile</code>，当然更加不会有k8s的资源描述文件（或者是Helm的Chart包）了（这到底是不是个问题呢，因人而异，以我的角度来讲，这是个问题）。<br>对于场景1，我认为问题在于变动没有追溯或不易追溯，come on, 明明git就是一个非常好的追溯工具好不好，当然，如果基础设施是k8s，定义好HPA就可以了，如下所示：<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: autoscaling&#x2F;v2beta1</span><br><span class="line">kind: HorizontalPodAutoscaler</span><br><span class="line">metadata:</span><br><span class="line">  name: demo</span><br><span class="line">spec:</span><br><span class="line">  scaleTargetRef:</span><br><span class="line">    apiVersion: apps&#x2F;v1</span><br><span class="line">    kind: Deployment</span><br><span class="line">    name: demo</span><br><span class="line">  minReplicas: 1</span><br><span class="line">  maxReplicas: 3</span><br><span class="line">  metrics:</span><br><span class="line">  - type: Resource</span><br><span class="line">    resource:</span><br><span class="line">      name: cpu</span><br><span class="line">      target:</span><br><span class="line">        type: AverageUtilization</span><br><span class="line">        averageUtilization: 70</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+        <p>什么是金丝雀发布？</p>
+<blockquote>
+<p>相传上个世纪煤矿工人在作业时，为了避免瓦斯中毒会随身带一只金丝雀下到矿洞，由于金丝雀对二氧化碳非常敏感，所以看到金丝雀昏厥的时候矿工们就知道该逃生了。</p>
+</blockquote>
+<p>金丝雀发布带来的好处是显而易见的，从上线的角度讲，每一次上线发布都是有风险的，如何最小化风险，当然不是不上线，逐步验证，直到确认无误再逐步全量更新，这就是金丝雀发布的意义，我们来看一个简单的demo</p>
+<p>源码以<code>message</code>内容作为区分，<code>pong-v1</code>对应<code>w1</code>版本， <code>pong-v2</code>对应<code>w2</code>版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;github.com&#x2F;gin-gonic&#x2F;gin&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">    r :&#x3D; gin.Default()</span><br><span class="line">    r.GET(&quot;&#x2F;ping&quot;, func(c *gin.Context) &#123;</span><br><span class="line">        c.JSON(200, gin.H&#123;</span><br><span class="line">            &quot;message&quot;: &quot;pong-v1”,&#x2F;&#x2F;pong-v2</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;)</span><br><span class="line">    r.Run(&quot;:8000&quot;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-</li>
-</ol>
-<p>对于场景2的问题，个人觉得是一个认知问题，容器化时代，开发人员需要知道自己的服务是如何容器化（个人认为这是容器化时代开发人员的基本修养），试想：作为开发人员的你，你定义好了<code>Dockerfile</code>以及k8s资源文件，有没有一种一切尽在掌握的感觉。</p>
-<h1 id="IaC推进的障碍？"><a href="#IaC推进的障碍？" class="headerlink" title="IaC推进的障碍？"></a>IaC推进的障碍？</h1><p>基础设施代码代码化这是一个趋势，<strong>可描述</strong>与<strong>可追溯</strong>这是一大优势，所以才会诞生“DevOps工程师”（一家之言），用于弥补开发的运维短板和运维的开发短板。但是没有让开发、运维、测试都参与进来，这其中一部分原因是由于工作职能划分的过于清晰，当然，也可能是部门墙，还有习惯的改变、新知识和概念的学习成本等，这些都是问题，以笔者浅见，解决这些问题的方法不是规避，新技术实施和推广，大家不免会有疑惑，或许让愿意接受的人来拥抱与参与会是一个好方法，用脚投票，只要是真正能带来效率提升的方法，相信没有人会拒绝的。</p>
-<p>ps:<br>这是一个<em>后端开发</em>，曾在质量团队呆过，做过PaaS平台，给运维团队做过乙方后，对IaC的一点浅见，真的是浅见，但也因此爱上了IaC</p>
-<p>参考：</p>
+<p><code>Dockerfile</code>如下所示</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">FROM golang as builder</span><br><span class="line"></span><br><span class="line">ENV GO111MODULE&#x3D;on</span><br><span class="line"></span><br><span class="line">WORKDIR &#x2F;app</span><br><span class="line"></span><br><span class="line">COPY go.mod .</span><br><span class="line">COPY go.sum .</span><br><span class="line"></span><br><span class="line">RUN export GOPROXY&#x3D;https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;goproxy&#x2F; &amp;&amp; go mod download</span><br><span class="line"></span><br><span class="line">COPY . .</span><br><span class="line"></span><br><span class="line"># 因为是在树莓派上运行，所以需要将GOARCH设置成arm</span><br><span class="line">RUN CGO_ENABLED&#x3D;0 GOOS&#x3D;linux GOARCH&#x3D;arm go build -o httpserver</span><br><span class="line"></span><br><span class="line">FROM scratch</span><br><span class="line">COPY --from&#x3D;builder &#x2F;app&#x2F;httpserver &#x2F;app&#x2F;</span><br><span class="line">EXPOSE 8000</span><br><span class="line">ENTRYPOINT [&quot;&#x2F;app&#x2F;httpserver&quot;]</span><br></pre></td></tr></table></figure>
+
+<p>启动两个版本的容器</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker -D run -p 127.0.0.3:8002:8000 w2</span><br><span class="line">docker -D run -p 127.0.0.2:8001:8000 w1</span><br></pre></td></tr></table></figure>
+
+<p>在nginx配置文件中增加以下内容</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">upstream backend &#123;</span><br><span class="line">    server 127.0.0.2:8001 weight&#x3D;10;</span><br><span class="line">    server 127.0.0.3:8002 weight&#x3D;5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">server &#123;</span><br><span class="line">    listen       8080;</span><br><span class="line">    location &#x2F;ping &#123;</span><br><span class="line">    proxy_pass http:&#x2F;&#x2F;backend;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接口调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v2&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v2&quot;&#125;%</span><br></pre></td></tr></table></figure>
+
+<p>可以明显看到 <code>pong-v1</code>与<code>pong-v2</code>的数量对比为2:1, 正好与nginx中的配置的权重相等，这里如果把<code>w2</code>比作待上线版本，<code>w1</code>看作当前生产版本，如若<code>w2</code>有问题，只会影响1/3的接口流量，这就做到了降低风险的目的。这里使用的是加权的轮询算法（<code>ptr++ mod nodeNum</code>）</p>
+<p>弊端：按序集中，整体流量不够分散<br>需要一个相对分散，看起来更平滑的轮询算法</p>
+<p>当然，这只是一个简单的Demo，具体到生产环境还要考虑其它问题，比如以用户ID作为流量切分的依据、新版本服务无感知加入生产服务列表、快速回滚预案、数据修复预案等等。</p>
+<p>参考:</p>
 <ul>
-<li><a target="_blank" rel="noopener" href="https://insights.thoughtworks.cn/nfrastructure-as-code/">https://insights.thoughtworks.cn/nfrastructure-as-code/</a></li>
-<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Infrastructure_as_code">https://en.wikipedia.org/wiki/Infrastructure_as_code</a></li>
-<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/">https://kubernetes.io/zh/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/</a></li>
+<li><a target="_blank" rel="noopener" href="http://blog.lfyzjck.com/14807508681806.html">http://blog.lfyzjck.com/14807508681806.html</a></li>
+<li><a target="_blank" rel="noopener" href="https://tenfy.cn/2018/11/12/smooth-weighted-round-robin/">https://tenfy.cn/2018/11/12/smooth-weighted-round-robin/</a></li>
+<li><a target="_blank" rel="noopener" href="https://colobu.com/2016/12/04/smooth-weighted-round-robin-algorithm/">https://colobu.com/2016/12/04/smooth-weighted-round-robin-algorithm/</a></li>
 </ul>
 
     </div>
@@ -294,7 +292,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://wusphinx.github.io/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/" title="为什么IaC是个好主意？">http://wusphinx.github.io/2020/11/29/为什么IaC是个好主意？/</a>
+    <a href="http://wusphinx.github.io/2019/10/09/%E9%87%91%E4%B8%9D%E9%9B%80%E5%8F%91%E5%B8%83/" title="金丝雀发布">http://wusphinx.github.io/2019/10/09/金丝雀发布/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -315,10 +313,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/" rel="prev" title="又一个CI/CD系统-Tekton">
-      <i class="fa fa-chevron-left"></i> 又一个CI/CD系统-Tekton
+    <a href="/2018/11/19/hello-world/" rel="prev" title="Hello World">
+      <i class="fa fa-chevron-left"></i> Hello World
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2019/10/23/rock-k8s-with-k3d/" rel="next" title="rock k8s with k3d">
+      rock k8s with k3d <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -378,7 +379,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IaC%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">IaC是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#IaC%E8%83%BD%E5%B8%A6%E6%9D%A5%E4%BB%80%E4%B9%88%E5%A5%BD%E5%A4%84%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">IaC能带来什么好处？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#IaC%E6%8E%A8%E8%BF%9B%E7%9A%84%E9%9A%9C%E7%A2%8D%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">IaC推进的障碍？</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -619,7 +619,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'issues',
       owner       : 'wusphinx',
       admin       : ['wusphinx'],
-      id          : '7733e8e2738567eb55fc78c041bde2c3',
+      id          : '5bb70d54a3ab5339a2bc27cb0ec1502b',
         language: '',
       distractionFreeMode: true
     });
