@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="CRD是什么？Custom Resource Definitionsr的简称，它是对Kubernetes API 的扩展。打个并不严谨的比方，从所周知Service、Pod、Deployment等是k8s内置的资源类型，因为k8s使用golang开发，如果把Pod类比为golang中的int类型，那么CRD可以类比为golang中的interface: 抽象类型，这个比喻可能不那么恰当，只是为了方">
+<meta property="og:type" content="article">
+<meta property="og:title" content="后端开发视角下的CRD之一">
+<meta property="og:url" content="http://wusphinx.github.io/2020/11/23/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84CRD%E4%B9%8B%E4%B8%80/index.html">
+<meta property="og:site_name" content="just for fun!">
+<meta property="og:description" content="CRD是什么？Custom Resource Definitionsr的简称，它是对Kubernetes API 的扩展。打个并不严谨的比方，从所周知Service、Pod、Deployment等是k8s内置的资源类型，因为k8s使用golang开发，如果把Pod类比为golang中的int类型，那么CRD可以类比为golang中的interface: 抽象类型，这个比喻可能不那么恰当，只是为了方">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-11-23T05:18:34.000Z">
+<meta property="article:modified_time" content="2020-12-02T01:58:52.710Z">
+<meta property="article:author" content="wusphinx">
+<meta property="article:tag" content="k8s">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://wusphinx.github.io/2020/11/23/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84CRD%E4%B9%8B%E4%B8%80/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>后端开发视角下的CRD之一 | just for fun!</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a32e8edc49025ee79314023ae6ab9e82";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="just for fun!" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">just for fun!</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">凡事有交代，件件有着落，事事有回音</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/wusphinx" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/23/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84CRD%E4%B9%8B%E4%B8%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wusphinx">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="just for fun!">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          后端开发视角下的CRD之一
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-23 13:18:34" itemprop="dateCreated datePublished" datetime="2020-11-23T13:18:34+08:00">2020-11-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-12-02 09:58:52" itemprop="dateModified" datetime="2020-12-02T09:58:52+08:00">2020-12-02</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/k8s/" itemprop="url" rel="index"><span itemprop="name">k8s</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/11/23/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84CRD%E4%B9%8B%E4%B8%80/" class="post-meta-item leancloud_visitors" data-flag-title="后端开发视角下的CRD之一" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="CRD是什么？"><a href="#CRD是什么？" class="headerlink" title="CRD是什么？"></a>CRD是什么？</h1><p>Custom Resource Definitionsr的简称，它是对Kubernetes API 的扩展。打个并不严谨的比方，从所周知<code>Service</code>、<code>Pod</code>、<code>Deployment</code>等是k8s内置的资源<strong>类型</strong>，因为k8s使用golang开发，如果把<code>Pod</code>类比为golang中的<code>int</code>类型，那么CRD可以类比为golang中的<code>interface</code>: 抽象类型，这个比喻可能不那么恰当，只是为了方便个人理解。而关于CRD的产生过程，还有一段非常有坡的故事，可参考认文末张磊老师的的<strong>Kubernetes API 与 Operator：不为人知的开发者战争</strong>链接</p>
+<h1 id="如何编写自己的CRD？"><a href="#如何编写自己的CRD？" class="headerlink" title="如何编写自己的CRD？"></a>如何编写自己的CRD？</h1><p>对CRD有了初步了解之后，我们要如何写出自己想要的CRD呢？<br>就像我们写Http Server一样，有<code>Gin</code>等框架，写CRD同样也有对应的框架：kubebuilder。下面，我们一下一步来编辑自己的CRD</p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="准备工具"><a href="#准备工具" class="headerlink" title="准备工具"></a>准备工具</h3><p>首先得自备一个k8s集群（笔者使用的是minikube）,根据自己的开发环境下载kubebuilder工具</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">os&#x3D;$(go env GOOS)</span><br><span class="line">arch&#x3D;$(go env GOARCH)</span><br><span class="line"></span><br><span class="line"># download kubebuilder and extract it to tmp</span><br><span class="line">curl -L https:&#x2F;&#x2F;go.kubebuilder.io&#x2F;dl&#x2F;2.3.1&#x2F;$&#123;os&#125;&#x2F;$&#123;arch&#125; | tar -xz -C &#x2F;tmp&#x2F;</span><br><span class="line"></span><br><span class="line"># move to a long-term location and put it on your path</span><br><span class="line"># (you&#39;ll need to set the KUBEBUILDER_ASSETS env var if you put it somewhere else)</span><br><span class="line">sudo mv &#x2F;tmp&#x2F;kubebuilder_2.3.1_$&#123;os&#125;_$&#123;arch&#125; &#x2F;usr&#x2F;local&#x2F;kubebuilder</span><br><span class="line">export PATH&#x3D;$PATH:&#x2F;usr&#x2F;local&#x2F;kubebuilder&#x2F;bin</span><br></pre></td></tr></table></figure>
+
+<h3 id="项目初始化"><a href="#项目初始化" class="headerlink" title="项目初始化"></a>项目初始化</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mkdir $GOPATH&#x2F;src&#x2F;example</span><br><span class="line">cd $GOPATH&#x2F;src&#x2F;example</span><br><span class="line">kubebuilder init --domain my.domain</span><br></pre></td></tr></table></figure>
+<p>项目结构如下所示：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── Makefile</span><br><span class="line">├── PROJECT</span><br><span class="line">├── bin</span><br><span class="line">│   └── manager</span><br><span class="line">├── config</span><br><span class="line">│   ├── certmanager</span><br><span class="line">│   ├── default</span><br><span class="line">│   ├── manager</span><br><span class="line">│   ├── prometheus</span><br><span class="line">│   ├── rbac</span><br><span class="line">│   └── webhook</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── hack</span><br><span class="line">│   └── boilerplate.go.txt</span><br><span class="line">└── main.go</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建API"><a href="#创建API" class="headerlink" title="创建API"></a>创建API</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubebuilder create api --group webapp --version v1 --kind Guestbook</span><br></pre></td></tr></table></figure>
+<p>到这一步，语义理解还是非常清楚的，就个人的理解：定义了一个RESTful的URI，类型、资源名称、Group等，很像我们平时写HTTP API的感觉，事实上，我们正在做的也确实在写一个API，目录结构如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── Makefile</span><br><span class="line">├── PROJECT</span><br><span class="line">├── api</span><br><span class="line">│   └── v1</span><br><span class="line">├── bin</span><br><span class="line">│   └── manager</span><br><span class="line">├── config</span><br><span class="line">│   ├── certmanager</span><br><span class="line">│   ├── crd</span><br><span class="line">│   ├── default</span><br><span class="line">│   ├── manager</span><br><span class="line">│   ├── prometheus</span><br><span class="line">│   ├── rbac</span><br><span class="line">│   ├── samples</span><br><span class="line">│   └── webhook</span><br><span class="line">├── controllers</span><br><span class="line">│   ├── guestbook_controller.go</span><br><span class="line">│   └── suite_test.go</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── hack</span><br><span class="line">│   └── boilerplate.go.txt</span><br><span class="line">└── main.go</span><br></pre></td></tr></table></figure>
+
+<h3 id="自定义类型：Guestbook"><a href="#自定义类型：Guestbook" class="headerlink" title="自定义类型：Guestbook"></a>自定义类型：Guestbook</h3><p>以下即是我们新创建的CRD：Guestbook的类型结构</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Guestbook is the Schema for the guestbooks API</span><br><span class="line">type Guestbook struct &#123;</span><br><span class="line">	metav1.TypeMeta   &#96;json:&quot;,inline&quot;&#96;</span><br><span class="line">	metav1.ObjectMeta &#96;json:&quot;metadata,omitempty&quot;&#96;</span><br><span class="line"></span><br><span class="line">	Spec   GuestbookSpec   &#96;json:&quot;spec,omitempty&quot;&#96;</span><br><span class="line">	Status GuestbookStatus &#96;json:&quot;status,omitempty&quot;&#96;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们来跟k8s内置类型<a target="_blank" rel="noopener" href="https://sourcegraph.com/github.com/kubernetes/kubernetes@2db51c85b948f8180b427964b43f84e517c6e35e/-/blob/staging/src/k8s.io/api/apps/v1/types.go#L254:6">Deployment</a>对比一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; Deployment enables declarative updates for Pods and ReplicaSets.</span><br><span class="line">type Deployment struct &#123;</span><br><span class="line">	metav1.TypeMeta &#96;json:&quot;,inline&quot;&#96;</span><br><span class="line">	&#x2F;&#x2F; Standard object metadata.</span><br><span class="line">	&#x2F;&#x2F; +optional</span><br><span class="line">	metav1.ObjectMeta &#96;json:&quot;metadata,omitempty&quot; protobuf:&quot;bytes,1,opt,name&#x3D;metadata&quot;&#96;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Specification of the desired behavior of the Deployment.</span><br><span class="line">	&#x2F;&#x2F; +optional</span><br><span class="line">	Spec DeploymentSpec &#96;json:&quot;spec,omitempty&quot; protobuf:&quot;bytes,2,opt,name&#x3D;spec&quot;&#96;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Most recently observed status of the Deployment.</span><br><span class="line">	&#x2F;&#x2F; +optional</span><br><span class="line">	Status DeploymentStatus &#96;json:&quot;status,omitempty&quot; protobuf:&quot;bytes,3,opt,name&#x3D;status&quot;&#96;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>类型结构几乎是一模一样的，可以看到<code>metav1.TypeMeta</code>与<code>metav1.ObjectMeta</code>是内嵌结构体，这是类型的一些公共定义，篇幅有限，就不在此处不展开了，<code>Spec</code>是需要注意的，前面我们定义了一个资源及期接口，那<code>Spec</code>可以认为是接口的入参了，<code>Status</code>: 顾名思义，资源的状态</p>
+<h3 id="入参校验"><a href="#入参校验" class="headerlink" title="入参校验"></a>入参校验</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">type GuestbookSpec struct &#123;</span><br><span class="line">	&#x2F;&#x2F; INSERT ADDITIONAL SPEC FIELDS - desired state of cluster</span><br><span class="line">	&#x2F;&#x2F; Important: Run &quot;make&quot; to regenerate code after modifying this file</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Foo is an example field of Guestbook. Edit Guestbook_types.go to remove&#x2F;update</span><br><span class="line">	&#x2F;&#x2F; 设定参数Foo的取值范围，也就是做入参校验</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; +kubebuilder:validation:MaxLength&#x3D;10</span><br><span class="line">	&#x2F;&#x2F; +kubebuilder:validation:MinLength&#x3D;1</span><br><span class="line">	Foo string &#96;json:&quot;foo,omitempty&quot;&#96;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处只有一个参数<code>Foo</code>，我们通过注解的方式设定Foo的取值范围为[1,10]</p>
+<h3 id="安装CRD到k8s集群中"><a href="#安装CRD到k8s集群中" class="headerlink" title="安装CRD到k8s集群中"></a>安装CRD到k8s集群中</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make install </span><br></pre></td></tr></table></figure>
+<p>将<code>Guestbook</code>这种资源类型注册到自己的k8s中以使外部系统能够访问到<br>部署一个<code>Guestbook</code>实例</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f config&#x2F;samples&#x2F;</span><br></pre></td></tr></table></figure>
+<p>这一步，以后端视角，就是调用<code>POST</code>接口新建一条”数据库”记录的，当然，k8s的数据库自然就是etcd了；如果我们将<code>foo</code>的值设为<code>asdfgasdfg1</code>，长度为11的字符串，再运行以上命令，会是什么结果呢？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">The Guestbook &quot;guestbook-sample&quot; is invalid: spec.foo: Invalid value: &quot;&quot;: spec.foo in body should be at most 10 chars long</span><br></pre></td></tr></table></figure>
+<p>可以看到入参校验生效了,</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>至此，我们完成了一个CRD的最基本定义，以后端开发的视角而言，如果将CRD可以看作是一张表，这张表作为资源，这一节完成了对CRD这类资源的基本定义跟校验。</p>
+<p>参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/">https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/jZLkS4SFVVXS1Mx2aG4PUA">Kubernetes API 与 Operator：不为人知的开发者战争（一）</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/ODaOiwXMBhRFZjbdu1BFUA">Kubernetes API 与 Operator：不为人知的开发者战争（二）</a></li>
+<li><a target="_blank" rel="noopener" href="https://book.kubebuilder.io/">kubebuilder</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/wusphinx/example-crd">https://github.com/wusphinx/example-crd</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>wusphinx
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://wusphinx.github.io/2020/11/23/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84CRD%E4%B9%8B%E4%B8%80/" title="后端开发视角下的CRD之一">http://wusphinx.github.io/2020/11/23/后端开发视角下的CRD之一/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/k8s/" rel="tag"><i class="fa fa-tag"></i> k8s</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/" rel="prev" title="又一个CI/CD系统-Tekton">
+      <i class="fa fa-chevron-left"></i> 又一个CI/CD系统-Tekton
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/" rel="next" title="为什么IaC是个好主意？">
+      为什么IaC是个好主意？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CRD%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">CRD是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%BC%96%E5%86%99%E8%87%AA%E5%B7%B1%E7%9A%84CRD%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">如何编写自己的CRD？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.1.</span> <span class="nav-text">准备工作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E5%85%B7"><span class="nav-number">2.1.1.</span> <span class="nav-text">准备工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">2.1.2.</span> <span class="nav-text">项目初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BAAPI"><span class="nav-number">2.1.3.</span> <span class="nav-text">创建API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%B1%BB%E5%9E%8B%EF%BC%9AGuestbook"><span class="nav-number">2.1.4.</span> <span class="nav-text">自定义类型：Guestbook</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A5%E5%8F%82%E6%A0%A1%E9%AA%8C"><span class="nav-number">2.1.5.</span> <span class="nav-text">入参校验</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85CRD%E5%88%B0k8s%E9%9B%86%E7%BE%A4%E4%B8%AD"><span class="nav-number">2.1.6.</span> <span class="nav-text">安装CRD到k8s集群中</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">wusphinx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wusphinx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wusphinx" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:wu.sphinx@gmail.com" title="E-Mail → mailto:wu.sphinx@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/U2qmNVI9YrCrKqf" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;U2qmNVI9YrCrKqf" rel="noopener" target="_blank"><i class="fab fa-twitter fa-fw"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wusphinx</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">39k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">35 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              Counter('post', '/classes/Counter', { title, url, time: 1 })
+                .then(response => response.json())
+                .then(() => {
+                  leancloudSelector(url).innerText = 1;
+                })
+                .catch(error => {
+                  console.error('Failed to create', error);
+                });
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"uc2D6XEyHmm91AIetiqdcCWm-9Nh9j0Va","app_key":"HqBfxttp3OG10VMeG4Nv0dfq","server_url":"https://uc2d6xey.lc-cn-e1-shared.com","security":false};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'e2422bde0b25a0476284',
+      clientSecret: 'c76a94e3192f5fb341cb72c5e7ebb167840fe0fc',
+      repo        : 'issues',
+      owner       : 'wusphinx',
+      admin       : ['wusphinx'],
+      id          : '18f6c011e1567ce5dd4b6f446113e641',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
