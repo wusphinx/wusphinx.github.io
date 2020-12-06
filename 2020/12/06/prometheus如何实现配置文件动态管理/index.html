@@ -20,23 +20,21 @@
     var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="EP亦即Engine Productivity的英文缩写，很多公司其称之为研发效能，我有幸在两家公司的效能小组效力过，以致于我在工作中会有一些习惯，比如自己搭建的k8s集群叫ep，测试环境容器化部署的环境变量也叫ep……，坦白讲，对这个职能背后的工作内容确实是有一些新鲜感，我的内心对EP更多的是敬畏之心。 记得去年初，因为厌倦了业务后端的开发工作，同时也有互联网从业人员的焦虑之心，更深一层，是因为">
+  <meta name="description" content="因为prometheus并不提供配置文件动态更新的API，所以使用文件作为prometheus服务发现的情况下，只能通过修改文件的方式达到更新配置的目的，常规步骤如下：  修改配置文件 重启prometheus服务（调用&#x2F;-&#x2F;reload使得配置变更生效，前提是开启了--web.enable-lifecycle支持）  一般修改配置如告警规则等属于低频事件，修改保持了就需要重启使之生效，那其实期望">
 <meta property="og:type" content="article">
-<meta property="og:title" content="我与EP的缘份">
-<meta property="og:url" content="http://wusphinx.github.io/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/index.html">
+<meta property="og:title" content="prometheus如何实现配置文件动态管理">
+<meta property="og:url" content="http://wusphinx.github.io/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/index.html">
 <meta property="og:site_name" content="just for fun!">
-<meta property="og:description" content="EP亦即Engine Productivity的英文缩写，很多公司其称之为研发效能，我有幸在两家公司的效能小组效力过，以致于我在工作中会有一些习惯，比如自己搭建的k8s集群叫ep，测试环境容器化部署的环境变量也叫ep……，坦白讲，对这个职能背后的工作内容确实是有一些新鲜感，我的内心对EP更多的是敬畏之心。 记得去年初，因为厌倦了业务后端的开发工作，同时也有互联网从业人员的焦虑之心，更深一层，是因为">
+<meta property="og:description" content="因为prometheus并不提供配置文件动态更新的API，所以使用文件作为prometheus服务发现的情况下，只能通过修改文件的方式达到更新配置的目的，常规步骤如下：  修改配置文件 重启prometheus服务（调用&#x2F;-&#x2F;reload使得配置变更生效，前提是开启了--web.enable-lifecycle支持）  一般修改配置如告警规则等属于低频事件，修改保持了就需要重启使之生效，那其实期望">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://wusphinx.github.io/images/ep.jpeg">
-<meta property="article:published_time" content="2020-11-17T08:48:49.000Z">
+<meta property="og:image" content="http://wusphinx.github.io/images/fsnotify.webp">
+<meta property="article:published_time" content="2020-12-06T08:34:55.000Z">
 <meta property="article:modified_time" content="2020-12-06T08:40:33.042Z">
 <meta property="article:author" content="wusphinx">
-<meta property="article:tag" content="DevOps">
-<meta property="article:tag" content="EP">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://wusphinx.github.io/images/ep.jpeg">
+<meta name="twitter:image" content="http://wusphinx.github.io/images/fsnotify.webp">
 
-<link rel="canonical" href="http://wusphinx.github.io/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/">
+<link rel="canonical" href="http://wusphinx.github.io/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/">
 
 
 <script id="page-configurations">
@@ -49,7 +47,7 @@
   };
 </script>
 
-  <title>我与EP的缘份 | just for fun!</title>
+  <title>prometheus如何实现配置文件动态管理 | just for fun!</title>
   
 
 
@@ -177,7 +175,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -190,7 +188,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          我与EP的缘份
+          prometheus如何实现配置文件动态管理
         </h1>
 
         <div class="post-meta">
@@ -199,28 +197,13 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-11-17 16:48:49" itemprop="dateCreated datePublished" datetime="2020-11-17T16:48:49+08:00">2020-11-17</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/DevOps/" itemprop="url" rel="index"><span itemprop="name">DevOps</span></a>
-                </span>
+              <time title="创建时间：2020-12-06 16:34:55 / 修改时间：16:40:33" itemprop="dateCreated datePublished" datetime="2020-12-06T16:34:55+08:00">2020-12-06</time>
             </span>
 
           
-            <span id="/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/" class="post-meta-item leancloud_visitors" data-flag-title="我与EP的缘份" title="阅读次数">
+            <span id="/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/" class="post-meta-item leancloud_visitors" data-flag-title="prometheus如何实现配置文件动态管理" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -232,14 +215,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.6k</span>
+              <span>3.5k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -251,16 +234,49 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>EP亦即<strong>Engine Productivity</strong>的英文缩写，很多公司其称之为<strong>研发效能</strong>，我有幸在两家公司的效能小组效力过，以致于我在工作中会有一些习惯，比如自己搭建的k8s集群叫<code>ep</code>，测试环境容器化部署的环境变量也叫<code>ep</code>……，坦白讲，对这个职能背后的工作内容确实是有一些新鲜感，我的内心对<code>EP</code>更多的是敬畏之心。</p>
-<p>记得去年初，因为厌倦了业务后端的开发工作，同时也有互联网从业人员的焦虑之心，更深一层，是因为在后端呆了四年，固然有运气的原因，不过还没有混到管理岗位这件事，让我对自身的能力产生了不自信，所以阴差阳错的，从成都来到杭州，进到了C公司质量部门的效能小组，title是资深测试开发工程师，所以其实这个效能是为测试服务的，不过真正做的事情，那就仁者见仁，智者见智了。</p>
-<p>我接到的第一个任务做一个移动端APP自动化测试平台。我经过调研，了解到了Appium、Macaca、NoSmoke、Airtest、Fastmonkey等框架和工具，几乎把移动端的测试工具玩了个遍，甚至自己去写页面的深度遍历，写技术方案，最后我得出了一个结论：所谓的自动化并不能真正提高效率，而只是将大家手机测试任务归类、统一，或者说最后其实需要的是一个手机无接触测试管理平台。后续因为手机端日志平台以及其它原因，此事就此搁置了，于是，我又被分派去和另一个小伙伴做测试环境的容器化推进了。也就是在做这件事的过程中，我接触到了k8s，以为自己也有机会去推进DevOps文化，结果处处碰壁。首先遇到的是k8s的安装方案，要不要自己开发k8s的PaaS平台，当时我根据个人的经验判断是不需要，原因是人力不足以及有开源的Rancher可以用，不过另外一个同事已经投入了不少精力在PaaS平台上，所以我转而去推动容器化的设计和落地上了。当然，遇到的问题是，容器化并不算是真正的需求，只是测试团队一厢情愿想的想法，当时运维团队也在做容器化，差别就在于他们不碰业务，而我们要自己去做业务，部署到k8s中，调通，然后测试，这些都是琐碎的体力活，整个过程就不太顺利，因为容器化需要各方协作，但是容器化的整体意愿不是很强烈，加上部门墙的原因，进度是比较慢的；后来又遭遇部门领导离开，新来的领导并不看好测试部门来做容器化，明面上不反对，但也支持继续下去；在此情况下，有一同事离职，我需要兼顾她留下来的工作：安全平台，经过一番了解，这套平台是基于sonarqube来做的，参与的人还挺多，不过，从设计上看，是自己做了一套平台，底下还是sonarqube，换了一层皮，做了一些翻译和统计以及计分系统，以我做开发的感觉，使用上反而更复杂，当时就觉得这个平台是比较功利的，并没有解决啥问题，不过，因为参与人数众多，也不得不硬着头皮往下做。因为这些工作内容上的变化，感觉到自己做的事情没有太大意义，虽然测试部门做一个平台是一个亮点，但于我而言，对工作本身并没有认同感、自豪感，这份工作无法激起我的热情，于是心生去意，带着对容器化的热情，对自己这次转型的不满，毅然裸辞了。现在回过头来看，并非完全没有收获，接触到了那么多不同的领域，不一样的技术，也做了不少尝试，质量部门的效能理应优先对测试负责，虽然在我看来，格局略小。</p>
-<p>今年8月，入职了W公司的技术保障中心的<strong>EP</strong>效能组，同样地，怀着一颗赤诚之心，我想大干一场。接到的活也是做一个平台：监控报警平台，公司内部本身有一套基于Zabbix的监控报警平台，是用Java写的，不过因为部门同时也在做容器化落地的事情，希望监控能用Prometheus来替代，所以其实是重写原有的监控报警平台，当时以为没有历史负担真好，因为需求已经定下来，于我而言，做实现就好了。于是乎，对Prometheus的生态做了一番调研，在测试环境自己使用，出服务设计方案，搭建环境等。当我深入其中，心头疑惑却越来越重，我要做的平台其实是一个运维主机监控平台（一期），从这个角度上来讲，没有这个平台，也可以完成目标，那做这一套的意义在哪呢？带着这个疑问，我去找了一些人，得到的回复是：主机监控最终是想开放给开发者用（因为当时还没有容器化，服务还是部署在主机中，主机与服务的关系是多对多），当然，我还了解到我所以在的部门，以前是运维部门，因为少有运维具备开发能力，于是招了一些开发，最终合并成了技术保障中心这个大部门。<br>于是，我明白了，效能并不是真的效能，说起来，只是运维的开发，怪不得领导经常打趣说运维是我们的<em>甲方</em>。所以才会有Nginx配置平台以及我做的监控报警平台，这些平台说是给运维做的GUI平台，可能有点夸张，但从效果上看，确实如此。在做这套平台的过程中，我花了一些时间研究GitOps和优化公司持续集成的方法，不过可惜的是，这些都还没有来的及实施，我就“离职”了。离职发生在我做入职答辩的那天，毫无征兆地，HR说我的答辩没有通过，由于公司没有多余的HC，限为本周五离职，当时我就惊呆了，甚至于觉得非常耻辱，我还是第一次遇到这种状况。我们老大找到我说，他之前也不知道，是因为公司打算上市，在做一些优化，也可能是安慰的话。我没有过多纠缠，也没有做申辩，只是觉得既然此处不欢迎我，那也没有呆下去的必要的，也不必再争取什么，果然在OA上提了离职。</p>
-<p><img src="/images/ep.jpeg" alt="ep"><br>这两次呆在EP团队的经历，称不上有多愉快，甚至于对自身产生了一些怀疑，因为这些，换工作突然变得频繁，但我本身并没有那么不安份。回想起来，我只是想<strong>做正确的事</strong>，但没有<strong>正确的做事</strong>，这两者，也并非绝对对立，对于EP，我的敬畏之心仍在，甚至更甚从前，是它让我了解到，工作不能只限于眼前，同能不能好高骛远，找到真正有价值的情况，优先解决主要矛盾，获取信任，努力解决别人的问题，就能不断拓展自己的业务边界。</p>
-<p>如果时间倒流，在C公司，我会花更多时间去了解各方真正的痛点，与上下达到目标的一致性，而不只是埋头做事；在W公司，我会争取平台最小化实现，推而广之，让真正的使用群众投票，再不生无效的疑问，抱无畏的希望。但是，没有如果，即使那么做了，也只是在做一份工作，并没有真正的<strong>EP</strong>。工作中的价值跟意义，或许，并没有那么重要吧，但是，心中还是会保留着一丝希望，这，是不是就是那份初心？</p>
+        <p>因为prometheus并不提供配置文件动态更新的API，所以使用<strong>文件</strong>作为prometheus服务发现的情况下，只能通过修改文件的方式达到更新配置的目的，<br>常规步骤如下：</p>
+<ol>
+<li>修改配置文件</li>
+<li>重启prometheus服务（调用<code>/-/reload</code>使得配置变更生效，前提是开启了<code>--web.enable-lifecycle</code>支持）</li>
+</ol>
+<p>一般修改配置如告警规则等属于低频事件，修改保持了就需要重启使之生效，那其实期望这两步能够合二为一，即：<br>修改完配置立刻应用更新。</p>
+<p>promethesu本身也提供这一功能，配置关键字为<code>file_sd_configs</code>，实现这一功能的引入的项目为<a target="_blank" rel="noopener" href="https://github.com/fsnotify/fsnotify">fsnotify</a></p>
+<blockquote>
+<p>Go的文件系统通知</p>
+</blockquote>
+<p>要实现以上两步合二为一的功能，很容易想到以下做法：</p>
+<ol>
+<li>监听文件变化</li>
+<li>处理文件变化</li>
+</ol>
+<p>可以先来看看fsnotify的示例代码</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/fsnotify/fsnotify&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	watcher, err := fsnotify.NewWatcher()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> watcher.Close()</span><br><span class="line"></span><br><span class="line">	done := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> &#123;</span><br><span class="line">			<span class="keyword">select</span> &#123;</span><br><span class="line">			<span class="keyword">case</span> event, ok := &lt;-watcher.Events:</span><br><span class="line">				<span class="keyword">if</span> !ok &#123;</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				log.Println(<span class="string">&quot;event:&quot;</span>, event)</span><br><span class="line">				<span class="keyword">if</span> event.Op&amp;fsnotify.Write == fsnotify.Write &#123;</span><br><span class="line">					log.Println(<span class="string">&quot;modified file:&quot;</span>, event.Name)</span><br><span class="line">				&#125;</span><br><span class="line">			<span class="keyword">case</span> err, ok := &lt;-watcher.Errors:</span><br><span class="line">				<span class="keyword">if</span> !ok &#123;</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				log.Println(<span class="string">&quot;error:&quot;</span>, err)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	err = watcher.Add(<span class="string">&quot;/tmp/foo&quot;</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">	&lt;-done</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到监听文件是由<code>watcher.Add(&quot;/tmp/foo&quot;)</code>完成的，对文件变化事件的处理是由其中的起的<code>Goroutine</code>完成的。看到这里其实可以知道关键在于监听这一步是如何实现的，那就来debug一下吧，笔者环境为<code>go1.14.4 darwin/amd64</code>，使用VSCode进行代码调试，代码目录为下（为方便调试，建议将项目依赖使用<code>go mod vendor</code>打入vendor目录中）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── main.go</span><br><span class="line">├── notes.md</span><br><span class="line">└── vendor</span><br><span class="line">    ├── github.com</span><br><span class="line">    ├── golang.org</span><br><span class="line">    └── modules.txt</span><br></pre></td></tr></table></figure>
+<p>调试配置如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;version&quot;: &quot;0.2.0&quot;,</span><br><span class="line">    &quot;configurations&quot;: [</span><br><span class="line">        &#123;</span><br><span class="line">            &quot;name&quot;: &quot;fsnotify&quot;,</span><br><span class="line">            &quot;type&quot;: &quot;go&quot;,</span><br><span class="line">            &quot;request&quot;: &quot;launch&quot;,</span><br><span class="line">            &quot;mode&quot;: &quot;auto&quot;,</span><br><span class="line">            &quot;program&quot;: &quot;$&#123;workspaceRoot&#125;&#x2F;main.go&quot;,</span><br><span class="line">            &quot;env&quot;: &#123;&#125;,</span><br><span class="line">            &quot;args&quot;: []</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>单步调试的过程其实并不是特别直观，这里使用使用一个工具叫做<code>go-callvis</code>来全局看一下文件监听的整个调用链，可以注意到有一个<code>register</code>的函数调用如下：<br><img src="/images/fsnotify.webp" alt="fsnotify"></p>
+<p>关键代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; register events with the queue</span><br><span class="line">func register(kq int, fds []int, flags int, fflags uint32) error &#123;</span><br><span class="line">	changes :&#x3D; make([]unix.Kevent_t, len(fds))</span><br><span class="line"></span><br><span class="line">	for i, fd :&#x3D; range fds &#123;</span><br><span class="line">		&#x2F;&#x2F; SetKevent converts int to the platform-specific types:</span><br><span class="line">		unix.SetKevent(&amp;changes[i], fd, unix.EVFILT_VNODE, flags)</span><br><span class="line">		changes[i].Fflags &#x3D; fflags</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; register the events</span><br><span class="line">	success, err :&#x3D; unix.Kevent(kq, changes, nil, nil)</span><br><span class="line">	if success &#x3D;&#x3D; -1 &#123;</span><br><span class="line">		return err</span><br><span class="line">	&#125;</span><br><span class="line">	return nil</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处能够注意到<code>Kevent</code>函数，到此处可以打住了（后绪的内容内容涉及cgo、动态链接细节，那是一块内容，跟此文关系不大），这是unix下基于kqueue的内核事件的系统调用。<br>至此，我们有了大致的脉络：</p>
+<ol>
+<li>监听kevent事件（在<code>NewWatcher</code>起一个goroutine专门读取kevent， <code>100ms</code>一次）</li>
+<li>注册文件监控</li>
+<li><code>main</code>中的goroutine即为对监听事件做出响应</li>
+</ol>
+<p>其实看到这里，关键点就在于kevent了，跟操作系统内核打交道，比较有意思的一点是kevent的注册跟监底层调用是同一个函数，即：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Kevent</span><span class="params">(kq <span class="keyword">int</span>, changes, events []Kevent_t, timeout *Timespec)</span> <span class="params">(n <span class="keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> change, event unsafe.Pointer</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(changes) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		change = unsafe.Pointer(&amp;changes[<span class="number">0</span>])</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(events) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		event = unsafe.Pointer(&amp;events[<span class="number">0</span>])</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> kevent(kq, change, <span class="built_in">len</span>(changes), event, <span class="built_in">len</span>(events), timeout)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>只不过在注册监听的时候参数<code>events</code>与<code>timeout</code>都为<code>nil</code>。用vim打开<code>/tmp/foo</code>并增加一行，程序运行结果为下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">2020&#x2F;12&#x2F;06 16:25:45 event: &quot;&#x2F;tmp&#x2F;foo&quot;: CHMOD</span><br><span class="line">2020&#x2F;12&#x2F;06 16:25:45 event: &quot;&#x2F;tmp&#x2F;foo&quot;: WRITE</span><br><span class="line">2020&#x2F;12&#x2F;06 16:25:45 modified file: &#x2F;tmp&#x2F;foo</span><br><span class="line">2020&#x2F;12&#x2F;06 16:25:45 event: &quot;&#x2F;tmp&#x2F;foo&quot;: CHMOD</span><br></pre></td></tr></table></figure>
+
+<p>总结，两个goroutine，一个读，一个写，这是典型的顾客-消费者模型，关键在于对操作系统kevent的运用。</p>
 <p>参考：</p>
 <ul>
-<li><a target="_blank" rel="noopener" href="https://sq.163yun.com/blog/article/224315717234970624">https://sq.163yun.com/blog/article/224315717234970624</a></li>
-<li><a target="_blank" rel="noopener" href="https://landing.google.com/engprod/">https://landing.google.com/engprod/</a></li>
+<li><a target="_blank" rel="noopener" href="https://prometheus.io/docs/prometheus/latest/configuration/configuration/">https://prometheus.io/docs/prometheus/latest/configuration/configuration/</a></li>
+<li><a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/Kqueue">https://zh.wikipedia.org/wiki/Kqueue</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/fsnotify/fsnotify">https://github.com/fsnotify/fsnotify</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/TrueFurby/go-callvis">https://github.com/TrueFurby/go-callvis</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.freebsd.org/cgi/man.cgi?query=kevent&amp;sektion=2">https://www.freebsd.org/cgi/man.cgi?query=kevent&amp;sektion=2</a></li>
 </ul>
 
     </div>
@@ -277,7 +293,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://wusphinx.github.io/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/" title="我与EP的缘份">http://wusphinx.github.io/2020/11/17/我与EP的缘份/</a>
+    <a href="http://wusphinx.github.io/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/" title="prometheus如何实现配置文件动态管理">http://wusphinx.github.io/2020/12/06/prometheus如何实现配置文件动态管理/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -287,11 +303,6 @@
 
 
       <footer class="post-footer">
-          
-          <div class="post-tags">
-              <a href="/tags/DevOps/" rel="tag"><i class="fa fa-tag"></i> DevOps</a>
-              <a href="/tags/EP/" rel="tag"><i class="fa fa-tag"></i> EP</a>
-          </div>
 
         
 
@@ -299,13 +310,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" rel="prev" title="谈谈容器化的实践思路">
-      <i class="fa fa-chevron-left"></i> 谈谈容器化的实践思路
+    <a href="/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/" rel="prev" title="为什么IaC是个好主意？">
+      <i class="fa fa-chevron-left"></i> 为什么IaC是个好主意？
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/" rel="next" title="又一个CI/CD系统-Tekton">
-      又一个CI/CD系统-Tekton <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -605,7 +613,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'issues',
       owner       : 'wusphinx',
       admin       : ['wusphinx'],
-      id          : 'd310e91061691aa1aab7123bcab324a2',
+      id          : '887118cbca4b268039161272408f9f2b',
         language: '',
       distractionFreeMode: true
     });
