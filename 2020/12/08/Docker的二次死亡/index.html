@@ -20,28 +20,24 @@
     var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。 彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台Rancher 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，Dock">
+  <meta name="description" content="似曾相识时间并没有过去多久，但就是感觉Docker的历史很长的似的。我是在2015年夏天加入红帽的，也就是OpenShift 3.0 GA的那个夏天。这是一个了不起的事件，因为它标志着将平台重新设计到Kubernetes上，而Kubernetes本身也刚刚发布了v1.0版本（这与GKE正式GA的时间段相同，如果你能相信它有那么老的话）。和很多人一样，我对Kubernetes和OpenShift一无">
 <meta property="og:type" content="article">
-<meta property="og:title" content="谈谈容器化的实践思路">
-<meta property="og:url" content="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/index.html">
+<meta property="og:title" content="Docker的二次死亡">
+<meta property="og:url" content="http://wusphinx.github.io/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/index.html">
 <meta property="og:site_name" content="just for fun!">
-<meta property="og:description" content="老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。 彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台Rancher 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，Dock">
+<meta property="og:description" content="似曾相识时间并没有过去多久，但就是感觉Docker的历史很长的似的。我是在2015年夏天加入红帽的，也就是OpenShift 3.0 GA的那个夏天。这是一个了不起的事件，因为它标志着将平台重新设计到Kubernetes上，而Kubernetes本身也刚刚发布了v1.0版本（这与GKE正式GA的时间段相同，如果你能相信它有那么老的话）。和很多人一样，我对Kubernetes和OpenShift一无">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://wusphinx.github.io/images/g7cicd.png">
-<meta property="og:image" content="http://wusphinx.github.io/images/caocaocicd.png">
-<meta property="og:image" content="http://wusphinx.github.io/images/caocaocicd-paas.png">
-<meta property="og:image" content="http://wusphinx.github.io/images/weiyicicd.png">
-<meta property="og:image" content="http://wusphinx.github.io/images/dreamcicd.png">
-<meta property="article:published_time" content="2020-11-17T05:52:02.000Z">
+<meta property="og:image" content="http://wusphinx.github.io/images/docker-attack.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/docker-chain.png">
+<meta property="og:image" content="http://wusphinx.github.io/images/containerd-chain.png">
+<meta property="article:published_time" content="2020-12-08T02:35:24.000Z">
 <meta property="article:modified_time" content="2020-12-08T05:45:10.240Z">
 <meta property="article:author" content="wusphinx">
 <meta property="article:tag" content="容器化">
-<meta property="article:tag" content="k8s">
-<meta property="article:tag" content="DevOps">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://wusphinx.github.io/images/g7cicd.png">
+<meta name="twitter:image" content="http://wusphinx.github.io/images/docker-attack.png">
 
-<link rel="canonical" href="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/">
+<link rel="canonical" href="http://wusphinx.github.io/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/">
 
 
 <script id="page-configurations">
@@ -54,7 +50,7 @@
   };
 </script>
 
-  <title>谈谈容器化的实践思路 | just for fun!</title>
+  <title>Docker的二次死亡 | just for fun!</title>
   
 
 
@@ -182,7 +178,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -195,7 +191,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          谈谈容器化的实践思路
+          Docker的二次死亡
         </h1>
 
         <div class="post-meta">
@@ -204,28 +200,22 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2020-11-17 13:52:02" itemprop="dateCreated datePublished" datetime="2020-11-17T13:52:02+08:00">2020-11-17</time>
+              <time title="创建时间：2020-12-08 10:35:24 / 修改时间：13:45:10" itemprop="dateCreated datePublished" datetime="2020-12-08T10:35:24+08:00">2020-12-08</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/DevOps/" itemprop="url" rel="index"><span itemprop="name">DevOps</span></a>
+                  <a href="/categories/%E7%BF%BB%E8%AF%91/" itemprop="url" rel="index"><span itemprop="name">翻译</span></a>
                 </span>
             </span>
 
           
-            <span id="/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" class="post-meta-item leancloud_visitors" data-flag-title="谈谈容器化的实践思路" title="阅读次数">
+            <span id="/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/" class="post-meta-item leancloud_visitors" data-flag-title="Docker的二次死亡" title="阅读次数">
               <span class="post-meta-item-icon">
                 <i class="fa fa-eye"></i>
               </span>
@@ -237,14 +227,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>3.2k</span>
+              <span>2.4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -256,26 +246,22 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。</p>
-<p>彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台<a target="_blank" rel="noopener" href="https://docs.rancher.cn/">Rancher</a> 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，<code>Dockerfile</code>也不是开发自己写的，而是由<strong>项目初始化工具</strong>生成Dockerfile及<code>.gitlab-ci.yml</code>模板，然后经由CI/CD平台（用的是gitlab runner）编辑打包然后部署，整个流程如下所示：</p>
-<p><img src="/images/g7cicd.png" alt="g7"></p>
-<p>当时测试环境有<code>test</code>、<code>demo</code>等，都是相互隔离的，以提交时的分支名确定应该部署到哪个环境，比如当时时<code>test</code>分支，提交代码之后，应用就部署到<code>test</code>环境。这一套流程最大的好处是从提交代码开始，CI/CD就开始进行，且中间没有阻隔，所以开发测试的效率非常高，迭代很迅速，这段工作经历是我的DevOps思想的启蒙。</p>
-<p>来到杭州以后，第一份工作是在某操做容器化的推进，公司的技术栈以Java为主，推进容器化的动机是因为测试环境非常混乱，希望能够通过服务容器化，减少测试环境的机器，以达到节省成本的目的。（值得一提的是，当时还没有谈到推进容器化上生产这一步，对此我表示很惊讶）。当时测试环境的混乱情况到了何种地步，且我娓娓道来：</p>
-<p><img src="/images/caocaocicd.png" alt="caocaocicd"></p>
-<p>其中选择空闲机器这一步，因为机器不足分布不均的有关系，会出现张三将机器上某个应用A杀掉从而部署应用B；触发jenkins任务这一步经常会失败，因为这一步通常是由测试人员去完成的，编译打包过程出现一些问题也在所难免，最后又得找到开发；再说部署这一步，因为应用部署前需要将自己注册到网关，这一步因为某些原因经常出现异常，从而导致部署中断，此时测试人员又得找到运维……我描述的还只是当时所见到的一小部分，这种混乱主要原因在于开发、运维、测试的割裂，各自完成自己所做的那一部署然后就不管了，由于常见的部门墙等因素，跨部门合作也不算很容易，所以经常可见的项目延期上线，以我的角度，DevOps几近于没有，因为我没有看到合作，团队和部门都是各自为政，当然，这也并非个案。<br>在这种情况下要推进容器化并非易事（话又说回来，要是容易的话，也就没我什么事了）。出于个人经验，你首先想到的是改造CI/CD，将我在前司的研发流程带到公司。于是，从DevOps的受益者变成设计者，我首先完成了一套基于gitlab的CI/CD流程的demo，在团队内做了一次分享，不过可惜的是，当时团队成员觉得思路挺好，就是和现有以Jenkins为主的流程有些差异，不容易为人所接受。现有想想，当时也确实过于激进，毕竟我所接触到的同事，他们也只用过Jenkins，而且由于职能的原因，每个人相对只关心于自己的任务线。虽说有点受挫，不过笔者当时并没有放弃，而是找gitlab的维护人员，希望他们能够安装gitlab runner，不过得到的回复是：我们现在已经有了jenkins，没有必要也不能安装gitlab runner了……</p>
-<p><img src="/images/caocaocicd-paas.png" alt="caocaocicd-paas"></p>
-<p>没法，容器化总也要推进，根据当时的服务容器化的需求，当然，是直接上k8s的，我们首先做的一件事情是进行硬件资源评估，然后申请机器部署k8s集群，然后着手公司服务拓扑图，没想到在这一步遇到了难题，由于业务线各自为政，没有一个全局的服务依赖关系，无奈之下，经过商议，为了证明容器化的可用性，只好先将某一个业务线的服务部署到我们的k8s集群中，由于业务不熟悉，期间也花了不少时间在打包以及调试上。<br>其中渲染资源文件模板本来是可以用helm的chart包来替代的，不过自己写<code>deployment</code>、<code>service</code>、<code>ingress</code>模板其实也可以达到目的，只不过因为要部署到k8s的关系，需要另做一套平台来部署，其实并没做DevOps，只是硬生生的将原有的那一套流程搬到容器化中而已，所以，即使我离职已经一年有余，这一套流程听说也没有最终落地，实在令人唏嘘。</p>
-<p>前司某医的容器化之路也是坎坷，项目起步于2018年，容器化的动机据不完全了解是为了让公司跟上技术的发展潮流。公司技术栈同样以Java为主，不过还有少数php、golang以及python应用（当然，我用golang写的监控服务必须是容器化的）。整个流程如下所示</p>
-<p><img src="/images/weiyicicd.png" alt="weiyicicd"></p>
-<p>所谓个性化部署参数这里要特别解释一下：就是写一个<a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/">CRD</a>，这个CRD定义了一些参数如：appname、requests、limits、port等，简单说就是将deployment的参数以CRD的形式暴露出来，最后形成所下所示的k8s资源：</p>
-<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">extensions/v1beta1</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">myapp</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">appname:</span> <span class="string">myapp</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"> <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line"> <span class="attr">template:</span></span><br><span class="line">   <span class="attr">spec:</span></span><br><span class="line">     <span class="attr">containers:</span></span><br><span class="line">       <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">myapp</span></span><br><span class="line">         <span class="attr">image:</span> <span class="string">myapp:5.0.3</span></span><br><span class="line">         <span class="attr">ports:</span></span><br><span class="line">         <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">         <span class="attr">resources:</span></span><br><span class="line">           <span class="attr">limits:</span></span><br><span class="line">             <span class="attr">memory:</span> <span class="string">600Mi</span></span><br><span class="line">             <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">           <span class="attr">requests:</span></span><br><span class="line">             <span class="attr">memory:</span> <span class="string">300Mi</span></span><br><span class="line">             <span class="attr">cpu:</span> <span class="string">500m</span></span><br><span class="line"><span class="string">……</span></span><br></pre></td></tr></table></figure>
-<p>如果定义一个服务也有三类资源如：<code>deployment</code>、<code>service</code>、<code>ingress</code>，那么这个CRD的作用就在于依据入参生成这三类资源并且部署到k8s集群中，由controller来保证每个应用，这三种资源都保持与CRD的定义一致。这也是容器化的一种思路，也是典型的CRD应用。<br>坦白说，就算不写CRD，也能达到这个目的，写CRD的目的是为了将应用模型进行统一，形式上就是尽可以将通用的资源参数暴露出来以供个性化使用，无奈之处在于还是在走容器化适配应用的路数，还不是将应用进行容器化适配，比如，dubbo的服务发现由zk提供，不过zk目前是在k8s外围，从功能上来讲，zk一定程序上跟k8s的service存在重复；应用内存使用是4G起步，虽说是为了保险起见，不过，这说明服务本身过重了，当然，硬件资源充足的情况下，这也不算是很大的问题；dubbo有自己的负载均衡，jvm可能也能限制资源的使用，作为容器化的拥趸，我不禁对java容器化的意义产生了一丝怀疑，诚然，k8s可以做hpa，可以自动重启，这些都是优势，但是到底真正的收益在哪里呢？<br>（截止文章发布之日，前司的容器化之路依然还在进行中）</p>
-<p>容器化固然只是一句口号而已，而这句口号，却常常伴随着DevOps这个词语，依我个人的浅见，DevOps是一种开放合作的文化，它打破了软件开发过程中的各个职能界限，最终是为了提高工作效率，从提高工作效率这个角度来看，DevOps在我的职业生涯中依旧少见。</p>
-<p>毫不掩饰的说，我对Jenkins有一丝偏见，因为我从事的公司中，使用Jenkins的方式无一例外，都是反DevOps的，设置流程的障碍，需要多方介入，但这种使用形成了一种习惯，我并不反对Jenkins，但如果使用Jenkins让事情变得更容易，我自然欣然接受，比如使用gitlab的CI/CD，就让人觉得很舒服，扩展性也挺好，这也是一个习惯问题。</p>
-<p>前司的容器化之路依旧在进行中，而我，也有自己对于容器化的想法，如下所示</p>
-<p><img src="/images/dreamcicd.png" alt="dreamcicd"></p>
-<p>以轻巧的<a target="_blank" rel="noopener" href="https://k3s.io/">k3s</a>作为CI平台，可以将gitlab runner接入进来，当然，每个应用有自己对于CI的需求，对于资源的需求，所以项目repo中也应该包含<code>.gitlab-ci.yml</code>、<code>Dockerfile</code>等，选择k3s来做CI的运行平台自然是为了利用k8s的资源调度和扩展性了；选择gitops是为了将CI/CD解耦，这样，就有DevOps内味了。</p>
-<p>自己的一点浅见，欢迎各位拍砖！</p>
+        <h2 id="似曾相识"><a href="#似曾相识" class="headerlink" title="似曾相识"></a>似曾相识</h2><p>时间并没有过去多久，但就是感觉Docker的历史很长的似的。我是在2015年夏天加入红帽的，也就是OpenShift 3.0 GA的那个夏天。这是一个了不起的事件，因为它标志着将平台重新设计到Kubernetes上，而Kubernetes本身也刚刚发布了v1.0版本（这与GKE正式GA的时间段相同，如果你能相信它有那么老的话）。和很多人一样，我对Kubernetes和OpenShift一无所知，对Docker也绝对不了解。一直到秋天，我对这三者才有了较深入的了解，很自然地在几个月后就爱上了这个生态系统。</p>
+<p>第二年春天，是我第一次 “真正”接触Docker公司。我没有参加2016年的红帽峰会，但我清楚地记得，那一年是Docker真正第一次对红帽OpenShift做出对外对抗的举动，是在红帽自己的活动上。他们当时送出了以下衬衫。<br><img src="/images/docker-attack.png" alt="image.png"></p>
+<p>简单总结一下，这是对红帽将补丁打到旧版本软件的模式的抗议（即所谓的”企业支持”）。红帽当时发布的Docker版本只是略微落后于最新版，而Docker发布的是他们最新的版本。我不会去讨论为什么这很重要的细节，因为今天仍然有一个争论，那就是对一个组织来说，回溯补丁与保持在最新版本上哪个选择更优（后者在最近一段时间已经变得相当好）。这一点意义重大，因为直到那个时候，Docker还是OpenShift吹牛过程中不可或缺的一部分。我们把一个和另一个一起卖掉，我们大多数人甚至所有的人的基本假设是：Docker只是一个伟大的技术。回想起来，这应该是意料之中的，因为Docker公司开始商业化之后，突然间就不再只是一项伟大的技术了。</p>
+<h2 id="一切或许早已注定"><a href="#一切或许早已注定" class="headerlink" title="一切或许早已注定"></a>一切或许早已注定</h2><p>早期的平台大战，我称之为平台大战，主要集中在OpenShift、Docker和Pivotal周围。Pivotal在早期就已经在企业组织中取得了重大进展，这是有充分理由的：平台体验相当不错。再加上Pivotal实验室，你就有了一些很好的机会。Docker是后起之秀。它是行业的宠儿，大放异彩，它拥有每个人都想要的技术，或者每个人都已经在使用的技术。Kubernetes当时还是个问号。我花了很多时间与组织讨论Kubernetes的核心和细节，以及为什么它很重要，或者更准确地说：为什么它应该对他们很重要。Docker敲打OpenShift的举动，迫使红帽开始关注Kubernetes和Linux，而不是其他任何东西。这招奏效了，业界也跟上了，于是Kubernetes就火了。</p>
+<p>还以为自己处于行业宠儿状态的Docker迅速做出了反应: 推出了Docker Swarm，众所周知，它始终没有真正流行起来。Swarm最终淹没在整个行业对Kubernetes的关注中，这是它第一次死亡：它输掉了平台大战，成为云原生生态系统中的第一个牺牲品。2016年下半年，才是Kubernetes真正边缘化Swarm的时候。这一点，在第二年春天的DockerCon2017大会上，当演讲者在大舞台上展示Docker与Kubernetes的整合时，主题演讲演示就能证明。值得注意的是，那是DockerCon最后一次大放异彩的”大”事件。从那以后，就是Kubernetes/CNCF的展会的天下了。</p>
+<h2 id="Docker的技术债务"><a href="#Docker的技术债务" class="headerlink" title="Docker的技术债务"></a>Docker的技术债务</h2><p>就在之前，Docker还是Kubernetes不可或缺的一部分，它们的关系就像下面描绘的那样：<br><img src="/images/docker-chain.png" alt="image.png"></p>
+<p>在Kubernetes过去的19个版本中，一直使用的就是这个链条。所有的一切，仅仅是为了起动一个有容器的pod。Docker从必需品变成了技术债。而在这一切中，社区一直辛苦到现在，Docker将在下一个版本1.20中被废弃。社区已经（理所当然地）背负了多年Docker的技术债务，以确保在docker守护进程无处不在的情况下，行业有它所需要的最无缝的体验。以下是已经存在了一段时间，但将在1.20及以后正式进入启用的调用链：<br><img src="/images/containerd-chain.png" alt="image.png"></p>
+<p>这是一个伟大的简化，也是对一致性的回归。为了帮助大家直观地了解为什么要这样做，我鼓励大家把Docker看作是容器之上的一个平台抽象，而容器只是一些Linux结构的集合体。这种抽象的一部分涉及到docker平台和containerd之间的整合，后者今天可以说是作为最流行的容器运行时而存在。Docker从来不是运行时。Docker只是让containerd和其他Linux构造变得容易工作，这样容器管理就会变得轻而易举。而不是用十几行代码来创建和部署一个正在运行的容器，你需要的只是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run</span><br></pre></td></tr></table></figure>
+<p>但和任何平台一样，这种便利性也伴随着大量的臃肿和技术债务。尤其是随着时间的推移。docker的移除和containerd的优化标志着云原生环境的一种文化转变。这些都不是要否定Docker公司。如果没有Docker公司，Kubernetes就不会有今天的成就。这是一个事实。Docker公司推动的技术和竞争是这个行业有史以来最棒的事情。现在，就将开源技术转化为盈利的商业模式而言，Docker Inc很可能会被研究成一个警示性的昙花一现。不过，我们还是要分清公司的贡献与商业模式。目前，Docker平台剩下的，是它在Kubernetes平台中的影子。尽管它确实在CI/CD生态系统内强势生存，而且，从表面上看，<code>Dockerfile</code>也是事实上的标准。这证明了Docker公司曾经拥有的力量，它的技术活得远远超过了公司的淘汰期，直到社区创新赶上了它。由于平台上多年来的臃肿，平台左侧的其他领域摆脱Docker守护进程的债务，其实只是时间问题。</p>
+<p>虽然它曾有过一段神奇的历程，对行业产生过不可磨灭的影响，但实际上，Docker已经死了……</p>
+<p>原文链接：<a target="_blank" rel="noopener" href="https://www.tariqislam.com/posts/kubernetes-docker-dep/">https://www.tariqislam.com/posts/kubernetes-docker-dep/</a></p>
+<p>参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1579900">https://cloud.tencent.com/developer/article/1579900</a></li>
+</ul>
 
     </div>
 
@@ -291,7 +277,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://wusphinx.github.io/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/" title="谈谈容器化的实践思路">http://wusphinx.github.io/2020/11/17/谈谈容器化的实践思路/</a>
+    <a href="http://wusphinx.github.io/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/" title="Docker的二次死亡">http://wusphinx.github.io/2020/12/08/Docker的二次死亡/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -304,8 +290,6 @@
           
           <div class="post-tags">
               <a href="/tags/%E5%AE%B9%E5%99%A8%E5%8C%96/" rel="tag"><i class="fa fa-tag"></i> 容器化</a>
-              <a href="/tags/k8s/" rel="tag"><i class="fa fa-tag"></i> k8s</a>
-              <a href="/tags/DevOps/" rel="tag"><i class="fa fa-tag"></i> DevOps</a>
           </div>
 
         
@@ -314,13 +298,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/" rel="prev" title="我是如何设计监控平台的">
-      <i class="fa fa-chevron-left"></i> 我是如何设计监控平台的
+    <a href="/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/" rel="prev" title="prometheus如何实现配置文件动态管理">
+      <i class="fa fa-chevron-left"></i> prometheus如何实现配置文件动态管理
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/" rel="next" title="我与EP的缘份">
-      我与EP的缘份 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -380,6 +361,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%BC%E6%9B%BE%E7%9B%B8%E8%AF%86"><span class="nav-number">1.</span> <span class="nav-text">似曾相识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E5%88%87%E6%88%96%E8%AE%B8%E6%97%A9%E5%B7%B2%E6%B3%A8%E5%AE%9A"><span class="nav-number">2.</span> <span class="nav-text">一切或许早已注定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Docker%E7%9A%84%E6%8A%80%E6%9C%AF%E5%80%BA%E5%8A%A1"><span class="nav-number">3.</span> <span class="nav-text">Docker的技术债务</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -620,7 +602,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'issues',
       owner       : 'wusphinx',
       admin       : ['wusphinx'],
-      id          : '60897faf775925735449365b31e3ec7b',
+      id          : '1f2c27bb520b89aa9d8d4ae00a6cc4a2',
         language: '',
       distractionFreeMode: true
     });

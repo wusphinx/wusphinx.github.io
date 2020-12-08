@@ -168,6 +168,110 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wusphinx">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="just for fun!">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/" class="post-title-link" itemprop="url">Docker的二次死亡</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-12-08 10:35:24 / 修改时间：13:45:10" itemprop="dateCreated datePublished" datetime="2020-12-08T10:35:24+08:00">2020-12-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BF%BB%E8%AF%91/" itemprop="url" rel="index"><span itemprop="name">翻译</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/" class="post-meta-item leancloud_visitors" data-flag-title="Docker的二次死亡" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="似曾相识"><a href="#似曾相识" class="headerlink" title="似曾相识"></a>似曾相识</h2><p>时间并没有过去多久，但就是感觉Docker的历史很长的似的。我是在2015年夏天加入红帽的，也就是OpenShift 3.0 GA的那个夏天。这是一个了不起的事件，因为它标志着将平台重新设计到Kubernetes上，而Kubernetes本身也刚刚发布了v1.0版本（这与GKE正式GA的时间段相同，如果你能相信它有那么老的话）。和很多人一样，我对Kubernetes和OpenShift一无所知，对Docker也绝对不了解。一直到秋天，我对这三者才有了较深入的了解，很自然地在几个月后就爱上了这个生态系统。</p>
+<p>第二年春天，是我第一次 “真正”接触Docker公司。我没有参加2016年的红帽峰会，但我清楚地记得，那一年是Docker真正第一次对红帽OpenShift做出对外对抗的举动，是在红帽自己的活动上。他们当时送出了以下衬衫。<br><img src="/images/docker-attack.png" alt="image.png"></p>
+<p>简单总结一下，这是对红帽将补丁打到旧版本软件的模式的抗议（即所谓的”企业支持”）。红帽当时发布的Docker版本只是略微落后于最新版，而Docker发布的是他们最新的版本。我不会去讨论为什么这很重要的细节，因为今天仍然有一个争论，那就是对一个组织来说，回溯补丁与保持在最新版本上哪个选择更优（后者在最近一段时间已经变得相当好）。这一点意义重大，因为直到那个时候，Docker还是OpenShift吹牛过程中不可或缺的一部分。我们把一个和另一个一起卖掉，我们大多数人甚至所有的人的基本假设是：Docker只是一个伟大的技术。回想起来，这应该是意料之中的，因为Docker公司开始商业化之后，突然间就不再只是一项伟大的技术了。</p>
+<h2 id="一切或许早已注定"><a href="#一切或许早已注定" class="headerlink" title="一切或许早已注定"></a>一切或许早已注定</h2><p>早期的平台大战，我称之为平台大战，主要集中在OpenShift、Docker和Pivotal周围。Pivotal在早期就已经在企业组织中取得了重大进展，这是有充分理由的：平台体验相当不错。再加上Pivotal实验室，你就有了一些很好的机会。Docker是后起之秀。它是行业的宠儿，大放异彩，它拥有每个人都想要的技术，或者每个人都已经在使用的技术。Kubernetes当时还是个问号。我花了很多时间与组织讨论Kubernetes的核心和细节，以及为什么它很重要，或者更准确地说：为什么它应该对他们很重要。Docker敲打OpenShift的举动，迫使红帽开始关注Kubernetes和Linux，而不是其他任何东西。这招奏效了，业界也跟上了，于是Kubernetes就火了。</p>
+<p>还以为自己处于行业宠儿状态的Docker迅速做出了反应: 推出了Docker Swarm，众所周知，它始终没有真正流行起来。Swarm最终淹没在整个行业对Kubernetes的关注中，这是它第一次死亡：它输掉了平台大战，成为云原生生态系统中的第一个牺牲品。2016年下半年，才是Kubernetes真正边缘化Swarm的时候。这一点，在第二年春天的DockerCon2017大会上，当演讲者在大舞台上展示Docker与Kubernetes的整合时，主题演讲演示就能证明。值得注意的是，那是DockerCon最后一次大放异彩的”大”事件。从那以后，就是Kubernetes/CNCF的展会的天下了。</p>
+<h2 id="Docker的技术债务"><a href="#Docker的技术债务" class="headerlink" title="Docker的技术债务"></a>Docker的技术债务</h2><p>就在之前，Docker还是Kubernetes不可或缺的一部分，它们的关系就像下面描绘的那样：<br><img src="/images/docker-chain.png" alt="image.png"></p>
+<p>在Kubernetes过去的19个版本中，一直使用的就是这个链条。所有的一切，仅仅是为了起动一个有容器的pod。Docker从必需品变成了技术债。而在这一切中，社区一直辛苦到现在，Docker将在下一个版本1.20中被废弃。社区已经（理所当然地）背负了多年Docker的技术债务，以确保在docker守护进程无处不在的情况下，行业有它所需要的最无缝的体验。以下是已经存在了一段时间，但将在1.20及以后正式进入启用的调用链：<br><img src="/images/containerd-chain.png" alt="image.png"></p>
+<p>这是一个伟大的简化，也是对一致性的回归。为了帮助大家直观地了解为什么要这样做，我鼓励大家把Docker看作是容器之上的一个平台抽象，而容器只是一些Linux结构的集合体。这种抽象的一部分涉及到docker平台和containerd之间的整合，后者今天可以说是作为最流行的容器运行时而存在。Docker从来不是运行时。Docker只是让containerd和其他Linux构造变得容易工作，这样容器管理就会变得轻而易举。而不是用十几行代码来创建和部署一个正在运行的容器，你需要的只是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run</span><br></pre></td></tr></table></figure>
+<p>但和任何平台一样，这种便利性也伴随着大量的臃肿和技术债务。尤其是随着时间的推移。docker的移除和containerd的优化标志着云原生环境的一种文化转变。这些都不是要否定Docker公司。如果没有Docker公司，Kubernetes就不会有今天的成就。这是一个事实。Docker公司推动的技术和竞争是这个行业有史以来最棒的事情。现在，就将开源技术转化为盈利的商业模式而言，Docker Inc很可能会被研究成一个警示性的昙花一现。不过，我们还是要分清公司的贡献与商业模式。目前，Docker平台剩下的，是它在Kubernetes平台中的影子。尽管它确实在CI/CD生态系统内强势生存，而且，从表面上看，<code>Dockerfile</code>也是事实上的标准。这证明了Docker公司曾经拥有的力量，它的技术活得远远超过了公司的淘汰期，直到社区创新赶上了它。由于平台上多年来的臃肿，平台左侧的其他领域摆脱Docker守护进程的债务，其实只是时间问题。</p>
+<p>虽然它曾有过一段神奇的历程，对行业产生过不可磨灭的影响，但实际上，Docker已经死了……</p>
+<p>原文链接：<a target="_blank" rel="noopener" href="https://www.tariqislam.com/posts/kubernetes-docker-dep/">https://www.tariqislam.com/posts/kubernetes-docker-dep/</a></p>
+<p>参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1579900">https://cloud.tencent.com/developer/article/1579900</a></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -191,10 +295,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2020-12-06 16:34:55 / 修改时间：16:40:33" itemprop="dateCreated datePublished" datetime="2020-12-06T16:34:55+08:00">2020-12-06</time>
+              <time title="创建时间：2020-12-06 16:34:55" itemprop="dateCreated datePublished" datetime="2020-12-06T16:34:55+08:00">2020-12-06</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
+              </span>
 
           
             <span id="/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/" class="post-meta-item leancloud_visitors" data-flag-title="prometheus如何实现配置文件动态管理" title="阅读次数">
@@ -322,7 +432,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -447,7 +557,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -576,7 +686,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -711,7 +821,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -816,7 +926,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -930,7 +1040,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1076,7 +1186,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1270,7 +1380,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
+                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1279,6 +1389,10 @@
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/k8s/" itemprop="url" rel="index"><span itemprop="name">k8s</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/k8s/%E7%BF%BB%E8%AF%91/" itemprop="url" rel="index"><span itemprop="name">翻译</span></a>
                 </span>
             </span>
 
@@ -1452,133 +1566,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2019/10/23/rock-k8s-with-k3d/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="wusphinx">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="just for fun!">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/23/rock-k8s-with-k3d/" class="post-title-link" itemprop="url">rock k8s with k3d</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-23 19:15:12" itemprop="dateCreated datePublished" datetime="2019-10-23T19:15:12+08:00">2019-10-23</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-06 16:40:33" itemprop="dateModified" datetime="2020-12-06T16:40:33+08:00">2020-12-06</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/k8s/" itemprop="url" rel="index"><span itemprop="name">k8s</span></a>
-                </span>
-            </span>
-
-          
-            <span id="/2019/10/23/rock-k8s-with-k3d/" class="post-meta-item leancloud_visitors" data-flag-title="rock k8s with k3d" title="阅读次数">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-eye"></i>
-              </span>
-              <span class="post-meta-item-text">阅读次数：</span>
-              <span class="leancloud-visitors-count"></span>
-            </span><br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>3.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="k3d是什么"><a href="#k3d是什么" class="headerlink" title="k3d是什么?"></a>k3d是什么?</h2><blockquote>
-<p>Little helper to run Rancher Lab’s k3s in Docker</p>
-</blockquote>
-<p>k3s是一个轻量级的Kubernetes发行版，小到什么程度，运行起来只占用512M的内存（在我的树莓4B上亲测过, 确实如此），要知道在服务器完整的部署k8s集群，单个节点的内存占用都需要近2G，实在是过于臃肿。在学习k8s的过程中，不是每个人都有条件使用多节点真实机器来部署的（当然官方也提供了minikube），这里选择k3d还是因为k3s足够轻巧，对于个人学习与实践也足够友好。k3d让k3s运行在容器中，如此就可以轻松拥有一个k8s的“集群”了，废话不多说，动手。</p>
-<h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><p>下载安装kubectl</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Debian&#x2F;Ubuntu</span><br><span class="line">apt-get update &amp;&amp; apt-get install -y apt-transport-https</span><br><span class="line">curl -s https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;apt&#x2F;doc&#x2F;apt-key.gpg | apt-key add -</span><br><span class="line">cat &lt;&lt;EOF &gt;&#x2F;etc&#x2F;apt&#x2F;sources.list.d&#x2F;kubernetes.list</span><br><span class="line">deb https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;apt&#x2F; kubernetes-xenial main</span><br><span class="line">EOF</span><br><span class="line">apt-get update</span><br><span class="line">apt-get install -y kubectl</span><br></pre></td></tr></table></figure>
-
-<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>脚本安装，足够简单</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># curl -s https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;rancher&#x2F;k3d&#x2F;master&#x2F;install.sh | bash</span><br></pre></td></tr></table></figure>
-
-<h3 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h3><p>创建5个工作节点的k8s”集群”</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># k3d c -w 5</span><br></pre></td></tr></table></figure>
-<p>创建完成后查看</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># k3d list</span><br><span class="line">+-------------+------------------------------+---------+---------+</span><br><span class="line">|    NAME     |            IMAGE             | STATUS  | WORKERS |</span><br><span class="line">+-------------+------------------------------+---------+---------+</span><br><span class="line">| k3s-default | docker.io&#x2F;rancher&#x2F;k3s:v0.9.1 | running |   5&#x2F;5   |</span><br><span class="line">+-------------+------------------------------+---------+---------+</span><br></pre></td></tr></table></figure>
-<p>看一下节点角色</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># kubectl get no</span><br><span class="line">NAME                       STATUS   ROLES    AGE     VERSION</span><br><span class="line">k3d-k3s-default-worker-2   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-1   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-4   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-3   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-server     Ready    master   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-0   Ready    worker   3h56m   v1.15.4-k3s.1</span><br></pre></td></tr></table></figure>
-<p>一个主节点，5个负载节点的配置，还未发现k3d能够支持多个主节点的创建方式，目前k3s也还未支持master的高可用，不过因为是实验用途，倒是没啥大问题。</p>
-<h3 id="pause镜像问题"><a href="#pause镜像问题" class="headerlink" title="pause镜像问题"></a>pause镜像问题</h3><p>在国内，由于众所周知的原因，必然会遇到以下问题</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">failed to pull image &quot;k8s.gcr.io&#x2F;pause:3.1&quot;: failed to resolve image &quot;k8s.gcr.io&#x2F;pause:3.1&quot;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>在k8s中，Pod是最小的调度单元，一个Pod中可以有多个容器共存，类似于多个容器运行在一台虚拟主机上，这些容器共享Linux的命名空间，而这个功能由pause容器提供。所以，下载不了pause镜像，就玩不转k8s了。微软提供了k8s的镜像代理服务，对微软的印象大好了。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># docker pull gcr.azk8s.cn&#x2F;google-containers&#x2F;pause:3.1</span><br><span class="line"># docker tag gcr.azk8s.cn&#x2F;google-containers&#x2F;pause:3.1 k8s.gcr.io&#x2F;pause:3.1</span><br></pre></td></tr></table></figure>
-
-<p>然后将pause镜像导入各个“节点”，这样各个节点就可以直接使用“本地”pause镜像从而避免<code>docker pull k8s.gcr.io/pause:3.1</code></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># k3d i k8s.gcr.io&#x2F;pause:3.1</span><br><span class="line">INFO[0000] Saving images [k8s.gcr.io&#x2F;pause:3.1] from local docker daemon...</span><br><span class="line">INFO[0000] Saved images to shared docker volume</span><br><span class="line">INFO[0000] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-server]</span><br><span class="line">INFO[0001] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-4]</span><br><span class="line">INFO[0001] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-3]</span><br><span class="line">INFO[0002] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-2]</span><br><span class="line">INFO[0002] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-1]</span><br><span class="line">INFO[0003] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-0]</span><br><span class="line">INFO[0003] Successfully imported images [k8s.gcr.io&#x2F;pause:3.1] in all nodes of cluster [k3s-default]</span><br><span class="line">INFO[0003] Cleaning up tarball</span><br><span class="line">INFO[0003] Deleted tarball</span><br><span class="line">INFO[0003] ...Done</span><br></pre></td></tr></table></figure>
-
-<p>现在， rock k8s with k3d!</p>
-<p>参考：</p>
-<ul>
-<li><a target="_blank" rel="noopener" href="https://github.com/rancher/k3d">https://github.com/rancher/k3d</a></li>
-<li><a target="_blank" rel="noopener" href="https://k3s.io/">https://k3s.io</a></li>
-<li><a target="_blank" rel="noopener" href="https://minikube.sigs.k8s.io/">https://minikube.sigs.k8s.io/</a></li>
-<li><a target="_blank" rel="noopener" href="https://github.com/Azure/container-service-for-azure-china/blob/master/aks/README.md">https://github.com/Azure/container-service-for-azure-china/blob/master/aks/README.md</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1648,13 +1635,13 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
-        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -1712,12 +1699,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">42k</span>
+    <span title="站点总字数">45k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">38 分钟</span>
+    <span title="站点阅读时长">40 分钟</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>
