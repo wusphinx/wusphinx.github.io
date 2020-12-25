@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
-<meta name="generator" content="Hexo 5.2.0">
+<meta name="generator" content="Hexo 5.3.0">
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
@@ -28,7 +28,7 @@
 <meta property="og:description" content="k3d是什么? Little helper to run Rancher Lab’s k3s in Docker  k3s是一个轻量级的Kubernetes发行版，小到什么程度，运行起来只占用512M的内存（在我的树莓4B上亲测过, 确实如此），要知道在服务器完整的部署k8s集群，单个节点的内存占用都需要近2G，实在是过于臃肿。在学习k8s的过程中，不是每个人都有条件使用多节点真实机器来部署的（当">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2019-10-23T11:15:12.000Z">
-<meta property="article:modified_time" content="2020-12-08T05:45:10.240Z">
+<meta property="article:modified_time" content="2020-12-25T03:30:23.136Z">
 <meta property="article:author" content="wusphinx">
 <meta property="article:tag" content="容器化">
 <meta property="article:tag" content="k8s">
@@ -205,7 +205,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-12-08 13:45:10" itemprop="dateModified" datetime="2020-12-08T13:45:10+08:00">2020-12-08</time>
+                <time title="修改时间：2020-12-25 11:30:23" itemprop="dateModified" datetime="2020-12-25T11:30:23+08:00">2020-12-25</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -255,10 +255,8 @@
 <p>k3s是一个轻量级的Kubernetes发行版，小到什么程度，运行起来只占用512M的内存（在我的树莓4B上亲测过, 确实如此），要知道在服务器完整的部署k8s集群，单个节点的内存占用都需要近2G，实在是过于臃肿。在学习k8s的过程中，不是每个人都有条件使用多节点真实机器来部署的（当然官方也提供了minikube），这里选择k3d还是因为k3s足够轻巧，对于个人学习与实践也足够友好。k3d让k3s运行在容器中，如此就可以轻松拥有一个k8s的“集群”了，废话不多说，动手。</p>
 <h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><p>下载安装kubectl</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># Debian&#x2F;Ubuntu</span><br><span class="line">apt-get update &amp;&amp; apt-get install -y apt-transport-https</span><br><span class="line">curl -s https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;apt&#x2F;doc&#x2F;apt-key.gpg | apt-key add -</span><br><span class="line">cat &lt;&lt;EOF &gt;&#x2F;etc&#x2F;apt&#x2F;sources.list.d&#x2F;kubernetes.list</span><br><span class="line">deb https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;apt&#x2F; kubernetes-xenial main</span><br><span class="line">EOF</span><br><span class="line">apt-get update</span><br><span class="line">apt-get install -y kubectl</span><br></pre></td></tr></table></figure>
-
 <h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>脚本安装，足够简单</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># curl -s https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;rancher&#x2F;k3d&#x2F;master&#x2F;install.sh | bash</span><br></pre></td></tr></table></figure>
-
 <h3 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h3><p>创建5个工作节点的k8s”集群”</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"># k3d c -w 5</span><br></pre></td></tr></table></figure>
 <p>创建完成后查看</p>
@@ -270,10 +268,8 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">failed to pull image &quot;k8s.gcr.io&#x2F;pause:3.1&quot;: failed to resolve image &quot;k8s.gcr.io&#x2F;pause:3.1&quot;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <p>在k8s中，Pod是最小的调度单元，一个Pod中可以有多个容器共存，类似于多个容器运行在一台虚拟主机上，这些容器共享Linux的命名空间，而这个功能由pause容器提供。所以，下载不了pause镜像，就玩不转k8s了。微软提供了k8s的镜像代理服务，对微软的印象大好了。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># docker pull gcr.azk8s.cn&#x2F;google-containers&#x2F;pause:3.1</span><br><span class="line"># docker tag gcr.azk8s.cn&#x2F;google-containers&#x2F;pause:3.1 k8s.gcr.io&#x2F;pause:3.1</span><br></pre></td></tr></table></figure>
-
 <p>然后将pause镜像导入各个“节点”，这样各个节点就可以直接使用“本地”pause镜像从而避免<code>docker pull k8s.gcr.io/pause:3.1</code></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"># k3d i k8s.gcr.io&#x2F;pause:3.1</span><br><span class="line">INFO[0000] Saving images [k8s.gcr.io&#x2F;pause:3.1] from local docker daemon...</span><br><span class="line">INFO[0000] Saved images to shared docker volume</span><br><span class="line">INFO[0000] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-server]</span><br><span class="line">INFO[0001] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-4]</span><br><span class="line">INFO[0001] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-3]</span><br><span class="line">INFO[0002] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-2]</span><br><span class="line">INFO[0002] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-1]</span><br><span class="line">INFO[0003] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-0]</span><br><span class="line">INFO[0003] Successfully imported images [k8s.gcr.io&#x2F;pause:3.1] in all nodes of cluster [k3s-default]</span><br><span class="line">INFO[0003] Cleaning up tarball</span><br><span class="line">INFO[0003] Deleted tarball</span><br><span class="line">INFO[0003] ...Done</span><br></pre></td></tr></table></figure>
-
 <p>现在， rock k8s with k3d!</p>
 <p>参考：</p>
 <ul>
@@ -399,7 +395,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-count">14</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -463,12 +459,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">45k</span>
+    <span title="站点总字数">50k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">40 分钟</span>
+    <span title="站点阅读时长">45 分钟</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
   </div>

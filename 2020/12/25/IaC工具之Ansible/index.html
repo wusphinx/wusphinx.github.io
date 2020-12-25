@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"wusphinx.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Ansible是什么？ Ansible是一种开源软件配置，配置管理和应用程序部署工具，可将基础结构作为代码启用。它可以在许多类Unix系统上运行，并且可以配置类Unix系统和Mi​​crosoft Windows。它包含自己的声明性语言来描述系统配置。Ansible由Michael DeHaan编写，并于2015年被Red Hat收购  如上所述，Ansible是一种开源软件配置工具，那它可以用来">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IaC工具之Ansible">
+<meta property="og:url" content="http://wusphinx.github.io/2020/12/25/IaC%E5%B7%A5%E5%85%B7%E4%B9%8BAnsible/index.html">
+<meta property="og:site_name" content="just for fun!">
+<meta property="og:description" content="Ansible是什么？ Ansible是一种开源软件配置，配置管理和应用程序部署工具，可将基础结构作为代码启用。它可以在许多类Unix系统上运行，并且可以配置类Unix系统和Mi​​crosoft Windows。它包含自己的声明性语言来描述系统配置。Ansible由Michael DeHaan编写，并于2015年被Red Hat收购  如上所述，Ansible是一种开源软件配置工具，那它可以用来">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-12-25T03:28:08.000Z">
+<meta property="article:modified_time" content="2020-12-25T03:30:23.136Z">
+<meta property="article:author" content="wusphinx">
+<meta property="article:tag" content="DevOps">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://wusphinx.github.io/2020/12/25/IaC%E5%B7%A5%E5%85%B7%E4%B9%8BAnsible/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>IaC工具之Ansible | just for fun!</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?a32e8edc49025ee79314023ae6ab9e82";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="just for fun!" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">just for fun!</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">凡事有交代，件件有着落，事事有回音</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-commonweal">
+
+    <a href="/404/" rel="section"><i class="fa fa-heartbeat fa-fw"></i>公益 404</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/wusphinx" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://wusphinx.github.io/2020/12/25/IaC%E5%B7%A5%E5%85%B7%E4%B9%8BAnsible/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wusphinx">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="just for fun!">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          IaC工具之Ansible
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-12-25 11:28:08 / 修改时间：11:30:23" itemprop="dateCreated datePublished" datetime="2020-12-25T11:28:08+08:00">2020-12-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DevOps/" itemprop="url" rel="index"><span itemprop="name">DevOps</span></a>
+                </span>
+            </span>
+
+          
+            <span id="/2020/12/25/IaC%E5%B7%A5%E5%85%B7%E4%B9%8BAnsible/" class="post-meta-item leancloud_visitors" data-flag-title="IaC工具之Ansible" title="阅读次数">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span class="leancloud-visitors-count"></span>
+            </span><br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>5.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>5 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Ansible是什么？"><a href="#Ansible是什么？" class="headerlink" title="Ansible是什么？"></a>Ansible是什么？</h1><blockquote>
+<p>Ansible是一种开源软件配置，配置管理和应用程序部署工具，可将基础结构作为代码启用。它可以在许多类Unix系统上运行，并且可以配置类Unix系统和Mi​​crosoft Windows。它包含自己的声明性语言来描述系统配置。Ansible由Michael DeHaan编写，并于2015年被Red Hat收购</p>
+</blockquote>
+<p>如上所述，Ansible是一种开源软件<strong>配置</strong>工具，那它可以用来做什么</p>
+<h1 id="Ansible可以用来做什么？"><a href="#Ansible可以用来做什么？" class="headerlink" title="Ansible可以用来做什么？"></a>Ansible可以用来做什么？</h1><h2 id="安装Ansible"><a href="#安装Ansible" class="headerlink" title="安装Ansible"></a>安装Ansible</h2><p>在Mac下直接安装即可</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install ansible</span><br></pre></td></tr></table></figure>
+<p>版本</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ansible --version</span><br><span class="line">ansible 2.10.3</span><br></pre></td></tr></table></figure>
+<h2 id="Ansible主机管理"><a href="#Ansible主机管理" class="headerlink" title="Ansible主机管理"></a>Ansible主机管理</h2><p>自己手头有两台虚拟机，一台是本地使用<a target="_blank" rel="noopener" href="https://multipass.run/">multipass</a>的虚拟机，一台是自己在腾讯去上买的虚拟机，先配置好ssh名密登录，然后配置好Ansible管理的主机，新建配置文件<code>/etc/ansible/hosts</code>，文件配置如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[webservers]</span><br><span class="line">42.192.129.128 ansible_ssh_user&#x3D;ubuntu</span><br><span class="line">[node]</span><br><span class="line">192.168.64.12 ansible_ssh_user&#x3D;ubuntu</span><br></pre></td></tr></table></figure>
+<p>这份配置还是非常清晰易懂的：</p>
+<ul>
+<li><code>[webservers]</code>是可以理解分组，<code>webservers</code>就是组名</li>
+<li><code>42.192.129.128</code>自然主机的ip地址了</li>
+<li><code>ansible_ssh_user</code>，故名思意，ssh登录用户名</li>
+</ul>
+<p>运行以下命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ ansible all -m ping</span><br><span class="line">192.168.64.12 | SUCCESS &#x3D;&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;&#x2F;usr&#x2F;bin&#x2F;python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br><span class="line">[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host 42.192.129.128 should use &#x2F;usr&#x2F;bin&#x2F;python3,</span><br><span class="line"> but is using &#x2F;usr&#x2F;bin&#x2F;python for backward compatibility with prior Ansible releases. A future</span><br><span class="line">Ansible release will default to using the discovered platform python for this host. See</span><br><span class="line">https:&#x2F;&#x2F;docs.ansible.com&#x2F;ansible&#x2F;2.10&#x2F;reference_appendices&#x2F;interpreter_discovery.html for more</span><br><span class="line">information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by</span><br><span class="line">setting deprecation_warnings&#x3D;False in ansible.cfg.</span><br><span class="line">42.192.129.128 | SUCCESS &#x3D;&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;&#x2F;usr&#x2F;bin&#x2F;python&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这条<code>ansible all -m ping</code>中<code>-m</code>的含义是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-m MODULE_NAME, --module-name MODULE_NAME</span><br><span class="line">                    module name to execute (default&#x3D;command)</span><br></pre></td></tr></table></figure>
+<p>也就是运行ansible的模块<code>ping</code>一下所有分组（注意，这里的ping并不是linux命令ping，面是ansible的一个模块实现了与linux下ping类似的功能），也可以指定分组如指定<strong>node</strong>分组</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ ansible node -m ping</span><br><span class="line">192.168.64.12 | SUCCESS &#x3D;&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;&#x2F;usr&#x2F;bin&#x2F;python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过这几条命令使用下来，可以知道ansible能通过ssh建立连接批量管理远程主机，试想一下，1000台主机的情况下，如果没有ansible，上述ping操作可能要重复敲击1000次，或者写脚本配置完成ansible的类似功能，将操作抽象成配置，减少重复，这或许就是<strong>ansible</strong>这类工具诞生的其中一个动机吧。</p>
+<h2 id="Ansible的Playbook功能"><a href="#Ansible的Playbook功能" class="headerlink" title="Ansible的Playbook功能"></a>Ansible的Playbook功能</h2><blockquote>
+<p>Ansible脚本的名字叫Playbook，使用的是YAML的格式，文件以yml结尾</p>
+</blockquote>
+<p>实现上例中的相同功能，可编写<code>demo.yml</code>如下</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">hosts:</span> <span class="string">node</span></span><br><span class="line">  <span class="attr">remote_user:</span> <span class="string">ubuntu</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">ping</span> <span class="string">test</span></span><br><span class="line">    <span class="attr">ping:</span> </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>运行之</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ ansible-playbook demo.yml</span><br><span class="line"></span><br><span class="line">PLAY [node] *****************************************************************************************</span><br><span class="line"></span><br><span class="line">TASK [Gathering Facts] ******************************************************************************</span><br><span class="line">ok: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">TASK [ping test] ************************************************************************************</span><br><span class="line">ok: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">PLAY RECAP ******************************************************************************************</span><br><span class="line">192.168.64.12              : ok&#x3D;2    changed&#x3D;0    unreachable&#x3D;0    failed&#x3D;0    skipped&#x3D;0    rescued&#x3D;0    ignored&#x3D;0</span><br></pre></td></tr></table></figure>
+<p>很简单的样子，事实上也确实简单，因为yml配置的描述也相当清晰。虽然此处只是一个简的例子，不过也可以看出Playbook其实就是ansible的的一种”脚本”形式，这种声明式配置足够友好（k8s的声明式对象配置倒是与此非常相似，应该是同宗同源）。</p>
+<h2 id="Host-Inventory"><a href="#Host-Inventory" class="headerlink" title="Host Inventory"></a>Host Inventory</h2><p>上术示例主机都是使用默认路径的配置，其实有可以动态自定义主机及分组配置，而且使用yml格式（我真是喜欢yml格式）定义文件<code>host.yml</code>如下所示</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">--- </span></span><br><span class="line"><span class="attr">all:</span></span><br><span class="line">  <span class="attr">children:</span></span><br><span class="line">    <span class="attr">webservers:</span></span><br><span class="line">      <span class="attr">hosts:</span></span><br><span class="line">        <span class="attr">42.192.129.128:</span></span><br><span class="line">          <span class="attr">ansible_ssh_user:</span> <span class="string">ubuntu</span></span><br><span class="line">    <span class="attr">node:</span></span><br><span class="line">      <span class="attr">hosts:</span></span><br><span class="line">        <span class="attr">192.168.64.12:</span></span><br><span class="line">          <span class="attr">ansible_ssh_user:</span> <span class="string">ubuntu</span></span><br></pre></td></tr></table></figure>
+<p>然后使用命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ansible all -i host.yml -m ping</span><br></pre></td></tr></table></figure>
+<p>结果与上例无异，个人更喜欢yml这种写法，结构更清晰，当然这是要在熟悉文档及其用法的基础上。</p>
+<h2 id="ansible-console"><a href="#ansible-console" class="headerlink" title="ansible-console"></a>ansible-console</h2><p>ansible为用户提供的交互式工具，可以方便地连接远程主机使用shell</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">➜ ansible-console node</span><br><span class="line">Welcome to the ansible console.</span><br><span class="line">Type help or ? to list commands.</span><br><span class="line"></span><br><span class="line">whoami@node (1)[f:5]$ lsb_release -a</span><br><span class="line">192.168.64.12 | CHANGED | rc&#x3D;0 &gt;&gt;</span><br><span class="line">Distributor ID:	Ubuntu</span><br><span class="line">Description:	Ubuntu 18.04.3 LTS</span><br><span class="line">Release:	18.04</span><br><span class="line">Codename:	bionicNo LSB modules are available.</span><br></pre></td></tr></table></figure>
+<p>发现ansible真挺好用，如果平台用多台虚拟机的话，也可以使用ansible来管理与交互，整体下来学习成本不高，使用却非常方便。</p>
+<h2 id="条件控制"><a href="#条件控制" class="headerlink" title="条件控制"></a>条件控制</h2><p>就像写代码一样，有时候做一些交互操作的时候希望有满足某些条件再执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">- hosts: node</span><br><span class="line">  remote_user: ubuntu</span><br><span class="line">  tasks:</span><br><span class="line">  - name: ping test</span><br><span class="line">    ping: </span><br><span class="line">    when: ansible_os_family &#x3D;&#x3D; &quot;RedHat&quot;</span><br></pre></td></tr></table></figure>
+<p>用ansible-playbook运行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">ansible-playbook demo.yml</span><br><span class="line"></span><br><span class="line">PLAY [node] ***********************************************************************************************************************************************</span><br><span class="line"></span><br><span class="line">TASK [Gathering Facts] ************************************************************************************************************************************</span><br><span class="line">ok: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">TASK [ping test] ******************************************************************************************************************************************</span><br><span class="line">skipping: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">PLAY RECAP ************************************************************************************************************************************************</span><br><span class="line">192.168.64.12              : ok&#x3D;1    changed&#x3D;0    unreachable&#x3D;0    failed&#x3D;0    skipped&#x3D;1    rescued&#x3D;0    ignored&#x3D;0</span><br></pre></td></tr></table></figure>
+<p>因为我的虚拟机是Ubuntu，所以在<code>ansible_os_family == &quot;RedHat&quot;</code>为false, 任务就跳过执行了，改为<code>Debian</code>就能正确执行了。</p>
+<h2 id="安装软件"><a href="#安装软件" class="headerlink" title="安装软件"></a>安装软件</h2><p>这个功能很有用，特别是需要批量操作</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">- hosts: node</span><br><span class="line">  remote_user: ubuntu</span><br><span class="line">  tasks:</span><br><span class="line">  - name: Install the package &quot;nmap&quot;</span><br><span class="line">    become: true</span><br><span class="line">    apt:</span><br><span class="line">      name: nmap</span><br></pre></td></tr></table></figure>
+<p>注意此处<code>become: true</code>是为了权限升级，可理解为<code>sudo</code>操作。</p>
+<hr>
+<p>此篇为开坑之作，还有一些高级用法Roles、<code>ansible-galaxy</code>、<code>ansible-vault</code>等就不一次展开了，通过简单的使用，ansible解决了批量操作、运维操作重用等功能，描述性配置非常强大，基本等同于编程，这与一些CI/CD平台如gitlab等倒是非常相似的，文档也很丰富且全面。</p>
+<p>未完，待续……</p>
+<p>参考：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Ansible_(software)">Ansible wiki</a></li>
+<li><a target="_blank" rel="noopener" href="https://ansible-tran.readthedocs.io/en/latest/docs/intro.html">Ansible中文权威指南</a></li>
+<li><a target="_blank" rel="noopener" href="https://juejin.cn/post/6844903734233792519">ssh免密登录</a></li>
+<li><a target="_blank" rel="noopener" href="https://getansible.com/begin/ansiblemo_kuai_module">Ansible模块</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>wusphinx
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://wusphinx.github.io/2020/12/25/IaC%E5%B7%A5%E5%85%B7%E4%B9%8BAnsible/" title="IaC工具之Ansible">http://wusphinx.github.io/2020/12/25/IaC工具之Ansible/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/DevOps/" rel="tag"><i class="fa fa-tag"></i> DevOps</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/" rel="prev" title="Docker的二次死亡">
+      <i class="fa fa-chevron-left"></i> Docker的二次死亡
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Ansible%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Ansible是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Ansible%E5%8F%AF%E4%BB%A5%E7%94%A8%E6%9D%A5%E5%81%9A%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">Ansible可以用来做什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Ansible"><span class="nav-number">2.1.</span> <span class="nav-text">安装Ansible</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ansible%E4%B8%BB%E6%9C%BA%E7%AE%A1%E7%90%86"><span class="nav-number">2.2.</span> <span class="nav-text">Ansible主机管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ansible%E7%9A%84Playbook%E5%8A%9F%E8%83%BD"><span class="nav-number">2.3.</span> <span class="nav-text">Ansible的Playbook功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Host-Inventory"><span class="nav-number">2.4.</span> <span class="nav-text">Host Inventory</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ansible-console"><span class="nav-number">2.5.</span> <span class="nav-text">ansible-console</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E6%8E%A7%E5%88%B6"><span class="nav-number">2.6.</span> <span class="nav-text">条件控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E8%BD%AF%E4%BB%B6"><span class="nav-number">2.7.</span> <span class="nav-text">安装软件</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">wusphinx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/wusphinx" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;wusphinx" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:wu.sphinx@gmail.com" title="E-Mail → mailto:wu.sphinx@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/U2qmNVI9YrCrKqf" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;U2qmNVI9YrCrKqf" rel="noopener" target="_blank"><i class="fab fa-twitter fa-fw"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/atom.xml" title="RSS → &#x2F;atom.xml"><i class="rss fa-fw"></i>RSS</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wusphinx</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">50k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">45 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+<script>
+  (function() {
+    function leancloudSelector(url) {
+      url = encodeURI(url);
+      return document.getElementById(url).querySelector('.leancloud-visitors-count');
+    }
+
+    function addCount(Counter) {
+      var visitors = document.querySelector('.leancloud_visitors');
+      var url = decodeURI(visitors.id);
+      var title = visitors.dataset.flagTitle;
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          if (results.length > 0) {
+            var counter = results[0];
+            leancloudSelector(url).innerText = counter.time + 1;
+            Counter('put', '/classes/Counter/' + counter.objectId, { time: { '__op': 'Increment', 'amount': 1 } })
+              .catch(error => {
+                console.error('Failed to save visitor count', error);
+              });
+          } else {
+              Counter('post', '/classes/Counter', { title, url, time: 1 })
+                .then(response => response.json())
+                .then(() => {
+                  leancloudSelector(url).innerText = 1;
+                })
+                .catch(error => {
+                  console.error('Failed to create', error);
+                });
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    function showTime(Counter) {
+      var visitors = document.querySelectorAll('.leancloud_visitors');
+      var entries = [...visitors].map(element => {
+        return decodeURI(element.id);
+      });
+
+      Counter('get', '/classes/Counter?where=' + encodeURIComponent(JSON.stringify({ url: { '$in': entries } })))
+        .then(response => response.json())
+        .then(({ results }) => {
+          for (let url of entries) {
+            let target = results.find(item => item.url === url);
+            leancloudSelector(url).innerText = target ? target.time : 0;
+          }
+        })
+        .catch(error => {
+          console.error('LeanCloud Counter Error', error);
+        });
+    }
+
+    let { app_id, app_key, server_url } = {"enable":true,"app_id":"uc2D6XEyHmm91AIetiqdcCWm-9Nh9j0Va","app_key":"HqBfxttp3OG10VMeG4Nv0dfq","server_url":"https://uc2d6xey.lc-cn-e1-shared.com","security":false};
+    function fetchData(api_server) {
+      var Counter = (method, url, data) => {
+        return fetch(`${api_server}/1.1${url}`, {
+          method,
+          headers: {
+            'X-LC-Id'     : app_id,
+            'X-LC-Key'    : app_key,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+        });
+      };
+      if (CONFIG.page.isPost) {
+        if (CONFIG.hostname !== location.hostname) return;
+        addCount(Counter);
+      } else if (document.querySelectorAll('.post-title-link').length >= 1) {
+        showTime(Counter);
+      }
+    }
+
+    let api_server = app_id.slice(-9) !== '-MdYXbMMI' ? server_url : `https://${app_id.slice(0, 8).toLowerCase()}.api.lncldglobal.com`;
+
+    if (api_server) {
+      fetchData(api_server);
+    } else {
+      fetch('https://app-router.leancloud.cn/2/route?appId=' + app_id)
+        .then(response => response.json())
+        .then(({ api_server }) => {
+          fetchData('https://' + api_server);
+        });
+    }
+  })();
+</script>
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'e2422bde0b25a0476284',
+      clientSecret: 'c76a94e3192f5fb341cb72c5e7ebb167840fe0fc',
+      repo        : 'issues',
+      owner       : 'wusphinx',
+      admin       : ['wusphinx'],
+      id          : '27ce68e4c7e15dbfde85620b6ce016fb',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
