@@ -1,0 +1,752 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Docker的二次死亡</title>
+    <url>/2020/12/08/Docker%E7%9A%84%E4%BA%8C%E6%AC%A1%E6%AD%BB%E4%BA%A1/</url>
+    <content><![CDATA[<h2 id="似曾相识"><a href="#似曾相识" class="headerlink" title="似曾相识"></a>似曾相识</h2><p>时间并没有过去多久，但就是感觉Docker的历史很长的似的。我是在2015年夏天加入红帽的，也就是OpenShift 3.0 GA的那个夏天。这是一个了不起的事件，因为它标志着将平台重新设计到Kubernetes上，而Kubernetes本身也刚刚发布了v1.0版本（这与GKE正式GA的时间段相同，如果你能相信它有那么老的话）。和很多人一样，我对Kubernetes和OpenShift一无所知，对Docker也绝对不了解。一直到秋天，我对这三者才有了较深入的了解，很自然地在几个月后就爱上了这个生态系统。</p>
+<p>第二年春天，是我第一次 “真正”接触Docker公司。我没有参加2016年的红帽峰会，但我清楚地记得，那一年是Docker真正第一次对红帽OpenShift做出对外对抗的举动，是在红帽自己的活动上。他们当时送出了以下衬衫。<br><img src="/images/docker-attack.png" alt="image.png"></p>
+<p>简单总结一下，这是对红帽将补丁打到旧版本软件的模式的抗议（即所谓的”企业支持”）。红帽当时发布的Docker版本只是略微落后于最新版，而Docker发布的是他们最新的版本。我不会去讨论为什么这很重要的细节，因为今天仍然有一个争论，那就是对一个组织来说，回溯补丁与保持在最新版本上哪个选择更优（后者在最近一段时间已经变得相当好）。这一点意义重大，因为直到那个时候，Docker还是OpenShift吹牛过程中不可或缺的一部分。我们把一个和另一个一起卖掉，我们大多数人甚至所有的人的基本假设是：Docker只是一个伟大的技术。回想起来，这应该是意料之中的，因为Docker公司开始商业化之后，突然间就不再只是一项伟大的技术了。</p>
+<h2 id="一切或许早已注定"><a href="#一切或许早已注定" class="headerlink" title="一切或许早已注定"></a>一切或许早已注定</h2><p>早期的平台大战，我称之为平台大战，主要集中在OpenShift、Docker和Pivotal周围。Pivotal在早期就已经在企业组织中取得了重大进展，这是有充分理由的：平台体验相当不错。再加上Pivotal实验室，你就有了一些很好的机会。Docker是后起之秀。它是行业的宠儿，大放异彩，它拥有每个人都想要的技术，或者每个人都已经在使用的技术。Kubernetes当时还是个问号。我花了很多时间与组织讨论Kubernetes的核心和细节，以及为什么它很重要，或者更准确地说：为什么它应该对他们很重要。Docker敲打OpenShift的举动，迫使红帽开始关注Kubernetes和Linux，而不是其他任何东西。这招奏效了，业界也跟上了，于是Kubernetes就火了。</p>
+<p>还以为自己处于行业宠儿状态的Docker迅速做出了反应: 推出了Docker Swarm，众所周知，它始终没有真正流行起来。Swarm最终淹没在整个行业对Kubernetes的关注中，这是它第一次死亡：它输掉了平台大战，成为云原生生态系统中的第一个牺牲品。2016年下半年，才是Kubernetes真正边缘化Swarm的时候。这一点，在第二年春天的DockerCon2017大会上，当演讲者在大舞台上展示Docker与Kubernetes的整合时，主题演讲演示就能证明。值得注意的是，那是DockerCon最后一次大放异彩的”大”事件。从那以后，就是Kubernetes/CNCF的展会的天下了。</p>
+<h2 id="Docker的技术债务"><a href="#Docker的技术债务" class="headerlink" title="Docker的技术债务"></a>Docker的技术债务</h2><p>就在之前，Docker还是Kubernetes不可或缺的一部分，它们的关系就像下面描绘的那样：<br><img src="/images/docker-chain.png" alt="image.png"></p>
+<p>在Kubernetes过去的19个版本中，一直使用的就是这个链条。所有的一切，仅仅是为了起动一个有容器的pod。Docker从必需品变成了技术债。而在这一切中，社区一直辛苦到现在，Docker将在下一个版本1.20中被废弃。社区已经（理所当然地）背负了多年Docker的技术债务，以确保在docker守护进程无处不在的情况下，行业有它所需要的最无缝的体验。以下是已经存在了一段时间，但将在1.20及以后正式进入启用的调用链：<br><img src="/images/containerd-chain.png" alt="image.png"></p>
+<p>这是一个伟大的简化，也是对一致性的回归。为了帮助大家直观地了解为什么要这样做，我鼓励大家把Docker看作是容器之上的一个平台抽象，而容器只是一些Linux结构的集合体。这种抽象的一部分涉及到docker平台和containerd之间的整合，后者今天可以说是作为最流行的容器运行时而存在。Docker从来不是运行时。Docker只是让containerd和其他Linux构造变得容易工作，这样容器管理就会变得轻而易举。而不是用十几行代码来创建和部署一个正在运行的容器，你需要的只是：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">docker run</span><br></pre></td></tr></table></figure>
+<p>但和任何平台一样，这种便利性也伴随着大量的臃肿和技术债务。尤其是随着时间的推移。docker的移除和containerd的优化标志着云原生环境的一种文化转变。这些都不是要否定Docker公司。如果没有Docker公司，Kubernetes就不会有今天的成就。这是一个事实。Docker公司推动的技术和竞争是这个行业有史以来最棒的事情。现在，就将开源技术转化为盈利的商业模式而言，Docker Inc很可能会被研究成一个警示性的昙花一现。不过，我们还是要分清公司的贡献与商业模式。目前，Docker平台剩下的，是它在Kubernetes平台中的影子。尽管它确实在CI/CD生态系统内强势生存，而且，从表面上看，<code>Dockerfile</code>也是事实上的标准。这证明了Docker公司曾经拥有的力量，它的技术活得远远超过了公司的淘汰期，直到社区创新赶上了它。由于平台上多年来的臃肿，平台左侧的其他领域摆脱Docker守护进程的债务，其实只是时间问题。</p>
+<p>虽然它曾有过一段神奇的历程，对行业产生过不可磨灭的影响，但实际上，Docker已经死了……</p>
+<p>原文链接：<a href="https://www.tariqislam.com/posts/kubernetes-docker-dep/">https://www.tariqislam.com/posts/kubernetes-docker-dep/</a></p>
+<p>参考：</p>
+<ul>
+<li><a href="https://cloud.tencent.com/developer/article/1579900">https://cloud.tencent.com/developer/article/1579900</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>翻译</category>
+      </categories>
+      <tags>
+        <tag>容器化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>IaC工具之Ansible</title>
+    <url>/2020/12/25/IaC%E5%B7%A5%E5%85%B7%E4%B9%8BAnsible/</url>
+    <content><![CDATA[<h1 id="Ansible是什么？"><a href="#Ansible是什么？" class="headerlink" title="Ansible是什么？"></a>Ansible是什么？</h1><blockquote>
+<p>Ansible是一种开源软件配置，配置管理和应用程序部署工具，可将基础结构作为代码启用。它可以在许多类Unix系统上运行，并且可以配置类Unix系统和Mi​​crosoft Windows。它包含自己的声明性语言来描述系统配置。Ansible由Michael DeHaan编写，并于2015年被Red Hat收购</p>
+</blockquote>
+<p>如上所述，Ansible是一种开源软件<strong>配置</strong>工具，那它可以用来做什么</p>
+<h1 id="Ansible可以用来做什么？"><a href="#Ansible可以用来做什么？" class="headerlink" title="Ansible可以用来做什么？"></a>Ansible可以用来做什么？</h1><h2 id="安装Ansible"><a href="#安装Ansible" class="headerlink" title="安装Ansible"></a>安装Ansible</h2><p>在Mac下直接安装即可</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">brew install ansible</span><br></pre></td></tr></table></figure>
+<p>版本</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ansible --version</span><br><span class="line">ansible 2.10.3</span><br></pre></td></tr></table></figure>
+<h2 id="Ansible主机管理"><a href="#Ansible主机管理" class="headerlink" title="Ansible主机管理"></a>Ansible主机管理</h2><p>自己手头有两台虚拟机，一台是本地使用<a href="https://multipass.run/">multipass</a>的虚拟机，一台是自己在腾讯去上买的虚拟机，先配置好ssh名密登录，然后配置好Ansible管理的主机，新建配置文件<code>/etc/ansible/hosts</code>，文件配置如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[webservers]</span><br><span class="line">42.192.129.128 ansible_ssh_user&#x3D;ubuntu</span><br><span class="line">[node]</span><br><span class="line">192.168.64.12 ansible_ssh_user&#x3D;ubuntu</span><br></pre></td></tr></table></figure>
+<p>这份配置还是非常清晰易懂的：</p>
+<ul>
+<li><code>[webservers]</code>是可以理解分组，<code>webservers</code>就是组名</li>
+<li><code>42.192.129.128</code>自然主机的ip地址了</li>
+<li><code>ansible_ssh_user</code>，故名思意，ssh登录用户名</li>
+</ul>
+<p>运行以下命令：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  ~ ansible all -m ping</span><br><span class="line">192.168.64.12 | SUCCESS &#x3D;&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;&#x2F;usr&#x2F;bin&#x2F;python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br><span class="line">[DEPRECATION WARNING]: Distribution Ubuntu 18.04 on host 42.192.129.128 should use &#x2F;usr&#x2F;bin&#x2F;python3,</span><br><span class="line"> but is using &#x2F;usr&#x2F;bin&#x2F;python for backward compatibility with prior Ansible releases. A future</span><br><span class="line">Ansible release will default to using the discovered platform python for this host. See</span><br><span class="line">https:&#x2F;&#x2F;docs.ansible.com&#x2F;ansible&#x2F;2.10&#x2F;reference_appendices&#x2F;interpreter_discovery.html for more</span><br><span class="line">information. This feature will be removed in version 2.12. Deprecation warnings can be disabled by</span><br><span class="line">setting deprecation_warnings&#x3D;False in ansible.cfg.</span><br><span class="line">42.192.129.128 | SUCCESS &#x3D;&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;&#x2F;usr&#x2F;bin&#x2F;python&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这条<code>ansible all -m ping</code>中<code>-m</code>的含义是</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">-m MODULE_NAME, --module-name MODULE_NAME</span><br><span class="line">                    module name to execute (default&#x3D;command)</span><br></pre></td></tr></table></figure>
+<p>也就是运行ansible的模块<code>ping</code>一下所有分组（注意，这里的ping并不是linux命令ping，面是ansible的一个模块实现了与linux下ping类似的功能），也可以指定分组如指定<strong>node</strong>分组</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  ~ ansible node -m ping</span><br><span class="line">192.168.64.12 | SUCCESS &#x3D;&gt; &#123;</span><br><span class="line">    &quot;ansible_facts&quot;: &#123;</span><br><span class="line">        &quot;discovered_interpreter_python&quot;: &quot;&#x2F;usr&#x2F;bin&#x2F;python3&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;changed&quot;: false,</span><br><span class="line">    &quot;ping&quot;: &quot;pong&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过这几条命令使用下来，可以知道ansible能通过ssh建立连接批量管理远程主机，试想一下，1000台主机的情况下，如果没有ansible，上述ping操作可能要重复敲击1000次，或者写脚本配置完成ansible的类似功能，将操作抽象成配置，减少重复，这或许就是<strong>ansible</strong>这类工具诞生的其中一个动机吧。</p>
+<h2 id="Ansible的Playbook功能"><a href="#Ansible的Playbook功能" class="headerlink" title="Ansible的Playbook功能"></a>Ansible的Playbook功能</h2><blockquote>
+<p>Ansible脚本的名字叫Playbook，使用的是YAML的格式，文件以yml结尾</p>
+</blockquote>
+<p>实现上例中的相同功能，可编写<code>demo.yml</code>如下</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">hosts:</span> <span class="string">node</span></span><br><span class="line">  <span class="attr">remote_user:</span> <span class="string">ubuntu</span></span><br><span class="line">  <span class="attr">tasks:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">ping</span> <span class="string">test</span></span><br><span class="line">    <span class="attr">ping:</span> </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>运行之</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  ~ ansible-playbook demo.yml</span><br><span class="line"></span><br><span class="line">PLAY [node] *****************************************************************************************</span><br><span class="line"></span><br><span class="line">TASK [Gathering Facts] ******************************************************************************</span><br><span class="line">ok: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">TASK [ping test] ************************************************************************************</span><br><span class="line">ok: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">PLAY RECAP ******************************************************************************************</span><br><span class="line">192.168.64.12              : ok&#x3D;2    changed&#x3D;0    unreachable&#x3D;0    failed&#x3D;0    skipped&#x3D;0    rescued&#x3D;0    ignored&#x3D;0</span><br></pre></td></tr></table></figure>
+<p>很简单的样子，事实上也确实简单，因为yml配置的描述也相当清晰。虽然此处只是一个简的例子，不过也可以看出Playbook其实就是ansible的的一种”脚本”形式，这种声明式配置足够友好（k8s的声明式对象配置倒是与此非常相似，应该是同宗同源）。</p>
+<h2 id="Host-Inventory"><a href="#Host-Inventory" class="headerlink" title="Host Inventory"></a>Host Inventory</h2><p>上术示例主机都是使用默认路径的配置，其实有可以动态自定义主机及分组配置，而且使用yml格式（我真是喜欢yml格式）定义文件<code>host.yml</code>如下所示</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="meta">--- </span></span><br><span class="line"><span class="attr">all:</span></span><br><span class="line">  <span class="attr">children:</span></span><br><span class="line">    <span class="attr">webservers:</span></span><br><span class="line">      <span class="attr">hosts:</span></span><br><span class="line">        <span class="attr">42.192.129.128:</span></span><br><span class="line">          <span class="attr">ansible_ssh_user:</span> <span class="string">ubuntu</span></span><br><span class="line">    <span class="attr">node:</span></span><br><span class="line">      <span class="attr">hosts:</span></span><br><span class="line">        <span class="attr">192.168.64.12:</span></span><br><span class="line">          <span class="attr">ansible_ssh_user:</span> <span class="string">ubuntu</span></span><br></pre></td></tr></table></figure>
+<p>然后使用命令</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ansible all -i host.yml -m ping</span><br></pre></td></tr></table></figure>
+<p>结果与上例无异，个人更喜欢yml这种写法，结构更清晰，当然这是要在熟悉文档及其用法的基础上。</p>
+<h2 id="ansible-console"><a href="#ansible-console" class="headerlink" title="ansible-console"></a>ansible-console</h2><p>ansible为用户提供的交互式工具，可以方便地连接远程主机使用shell</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜ ansible-console node</span><br><span class="line">Welcome to the ansible console.</span><br><span class="line">Type help or ? to list commands.</span><br><span class="line"></span><br><span class="line">whoami@node (1)[f:5]$ lsb_release -a</span><br><span class="line">192.168.64.12 | CHANGED | rc&#x3D;0 &gt;&gt;</span><br><span class="line">Distributor ID:	Ubuntu</span><br><span class="line">Description:	Ubuntu 18.04.3 LTS</span><br><span class="line">Release:	18.04</span><br><span class="line">Codename:	bionicNo LSB modules are available.</span><br></pre></td></tr></table></figure>
+<p>发现ansible真挺好用，如果平台用多台虚拟机的话，也可以使用ansible来管理与交互，整体下来学习成本不高，使用却非常方便。</p>
+<h2 id="条件控制"><a href="#条件控制" class="headerlink" title="条件控制"></a>条件控制</h2><p>就像写代码一样，有时候做一些交互操作的时候希望有满足某些条件再执行</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">- hosts: node</span><br><span class="line">  remote_user: ubuntu</span><br><span class="line">  tasks:</span><br><span class="line">  - name: ping test</span><br><span class="line">    ping: </span><br><span class="line">    when: ansible_os_family &#x3D;&#x3D; &quot;RedHat&quot;</span><br></pre></td></tr></table></figure>
+<p>用ansible-playbook运行</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">ansible-playbook demo.yml</span><br><span class="line"></span><br><span class="line">PLAY [node] ***********************************************************************************************************************************************</span><br><span class="line"></span><br><span class="line">TASK [Gathering Facts] ************************************************************************************************************************************</span><br><span class="line">ok: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">TASK [ping test] ******************************************************************************************************************************************</span><br><span class="line">skipping: [192.168.64.12]</span><br><span class="line"></span><br><span class="line">PLAY RECAP ************************************************************************************************************************************************</span><br><span class="line">192.168.64.12              : ok&#x3D;1    changed&#x3D;0    unreachable&#x3D;0    failed&#x3D;0    skipped&#x3D;1    rescued&#x3D;0    ignored&#x3D;0</span><br></pre></td></tr></table></figure>
+<p>因为我的虚拟机是Ubuntu，所以在<code>ansible_os_family == &quot;RedHat&quot;</code>为false, 任务就跳过执行了，改为<code>Debian</code>就能正确执行了。</p>
+<h2 id="安装软件"><a href="#安装软件" class="headerlink" title="安装软件"></a>安装软件</h2><p>这个功能很有用，特别是需要批量操作</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">- hosts: node</span><br><span class="line">  remote_user: ubuntu</span><br><span class="line">  tasks:</span><br><span class="line">  - name: Install the package &quot;nmap&quot;</span><br><span class="line">    become: true</span><br><span class="line">    apt:</span><br><span class="line">      name: nmap</span><br></pre></td></tr></table></figure>
+<p>注意此处<code>become: true</code>是为了权限升级，可理解为<code>sudo</code>操作。</p>
+<hr>
+<p>此篇为开坑之作，还有一些高级用法Roles、<code>ansible-galaxy</code>、<code>ansible-vault</code>等就不一次展开了，通过简单的使用，ansible解决了批量操作、运维操作重用等功能，描述性配置非常强大，基本等同于编程，这与一些CI/CD平台如gitlab等倒是非常相似的，文档也很丰富且全面。</p>
+<p>未完，待续……</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Ansible_(software)">Ansible wiki</a></li>
+<li><a href="https://ansible-tran.readthedocs.io/en/latest/docs/intro.html">Ansible中文权威指南</a></li>
+<li><a href="https://juejin.cn/post/6844903734233792519">ssh免密登录</a></li>
+<li><a href="https://getansible.com/begin/ansiblemo_kuai_module">Ansible模块</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2018/11/19/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>prometheus如何实现配置文件动态管理</title>
+    <url>/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/</url>
+    <content><![CDATA[<p>因为prometheus并不提供配置文件动态更新的API，所以使用<strong>文件</strong>作为prometheus服务发现的情况下，只能通过修改文件的方式达到更新配置的目的，<br>常规步骤如下：</p>
+<ol>
+<li>修改配置文件</li>
+<li>重启prometheus服务（调用<code>/-/reload</code>使得配置变更生效，前提是开启了<code>--web.enable-lifecycle</code>支持）</li>
+</ol>
+<p>一般修改配置如告警规则等属于低频事件，修改保持了就需要重启使之生效，那其实期望这两步能够合二为一，即：<br>修改完配置立刻应用更新。</p>
+<p>promethesu本身也提供这一功能，配置关键字为<code>file_sd_configs</code>，实现这一功能的引入的项目为<a href="https://github.com/fsnotify/fsnotify">fsnotify</a></p>
+<blockquote>
+<p>Go的文件系统通知</p>
+</blockquote>
+<p>要实现以上两步合二为一的功能，很容易想到以下做法：</p>
+<ol>
+<li>监听文件变化</li>
+<li>处理文件变化</li>
+</ol>
+<p>可以先来看看fsnotify的示例代码</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/fsnotify/fsnotify&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	watcher, err := fsnotify.NewWatcher()</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> watcher.Close()</span><br><span class="line"></span><br><span class="line">	done := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>)</span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">for</span> &#123;</span><br><span class="line">			<span class="keyword">select</span> &#123;</span><br><span class="line">			<span class="keyword">case</span> event, ok := &lt;-watcher.Events:</span><br><span class="line">				<span class="keyword">if</span> !ok &#123;</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				log.Println(<span class="string">&quot;event:&quot;</span>, event)</span><br><span class="line">				<span class="keyword">if</span> event.Op&amp;fsnotify.Write == fsnotify.Write &#123;</span><br><span class="line">					log.Println(<span class="string">&quot;modified file:&quot;</span>, event.Name)</span><br><span class="line">				&#125;</span><br><span class="line">			<span class="keyword">case</span> err, ok := &lt;-watcher.Errors:</span><br><span class="line">				<span class="keyword">if</span> !ok &#123;</span><br><span class="line">					<span class="keyword">return</span></span><br><span class="line">				&#125;</span><br><span class="line">				log.Println(<span class="string">&quot;error:&quot;</span>, err)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	err = watcher.Add(<span class="string">&quot;/tmp/foo&quot;</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">	&lt;-done</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到监听文件是由<code>watcher.Add(&quot;/tmp/foo&quot;)</code>完成的，对文件变化事件的处理是由其中的起的<code>Goroutine</code>完成的。看到这里其实可以知道关键在于监听这一步是如何实现的，那就来debug一下吧，笔者环境为<code>go1.14.4 darwin/amd64</code>，使用VSCode进行代码调试，代码目录为下（为方便调试，建议将项目依赖使用<code>go mod vendor</code>打入vendor目录中）：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── main.go</span><br><span class="line">├── notes.md</span><br><span class="line">└── vendor</span><br><span class="line">    ├── github.com</span><br><span class="line">    ├── golang.org</span><br><span class="line">    └── modules.txt</span><br></pre></td></tr></table></figure>
+<p>调试配置如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;version&quot;: &quot;0.2.0&quot;,</span><br><span class="line">    &quot;configurations&quot;: [</span><br><span class="line">        &#123;</span><br><span class="line">            &quot;name&quot;: &quot;fsnotify&quot;,</span><br><span class="line">            &quot;type&quot;: &quot;go&quot;,</span><br><span class="line">            &quot;request&quot;: &quot;launch&quot;,</span><br><span class="line">            &quot;mode&quot;: &quot;auto&quot;,</span><br><span class="line">            &quot;program&quot;: &quot;$&#123;workspaceRoot&#125;&#x2F;main.go&quot;,</span><br><span class="line">            &quot;env&quot;: &#123;&#125;,</span><br><span class="line">            &quot;args&quot;: []</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>单步调试的过程其实并不是特别直观，这里使用使用一个工具叫做<code>go-callvis</code>来全局看一下文件监听的整个调用链，可以注意到有一个<code>register</code>的函数调用如下：<br><img src="/images/fsnotify.webp" alt="fsnotify"></p>
+<p>关键代码如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; register events with the queue</span><br><span class="line">func register(kq int, fds []int, flags int, fflags uint32) error &#123;</span><br><span class="line">	changes :&#x3D; make([]unix.Kevent_t, len(fds))</span><br><span class="line"></span><br><span class="line">	for i, fd :&#x3D; range fds &#123;</span><br><span class="line">		&#x2F;&#x2F; SetKevent converts int to the platform-specific types:</span><br><span class="line">		unix.SetKevent(&amp;changes[i], fd, unix.EVFILT_VNODE, flags)</span><br><span class="line">		changes[i].Fflags &#x3D; fflags</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; register the events</span><br><span class="line">	success, err :&#x3D; unix.Kevent(kq, changes, nil, nil)</span><br><span class="line">	if success &#x3D;&#x3D; -1 &#123;</span><br><span class="line">		return err</span><br><span class="line">	&#125;</span><br><span class="line">	return nil</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处能够注意到<code>Kevent</code>函数，到此处可以打住了（后绪的内容内容涉及cgo、动态链接细节，那是一块内容，跟此文关系不大），这是unix下基于kqueue的内核事件的系统调用。<br>至此，我们有了大致的脉络：</p>
+<ol>
+<li>监听kevent事件（在<code>NewWatcher</code>起一个goroutine专门读取kevent， <code>100ms</code>一次）</li>
+<li>注册文件监控</li>
+<li><code>main</code>中的goroutine即为对监听事件做出响应</li>
+</ol>
+<p>其实看到这里，关键点就在于kevent了，跟操作系统内核打交道，比较有意思的一点是kevent的注册跟监底层调用是同一个函数，即：</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Kevent</span><span class="params">(kq <span class="keyword">int</span>, changes, events []Kevent_t, timeout *Timespec)</span> <span class="params">(n <span class="keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> change, event unsafe.Pointer</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(changes) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		change = unsafe.Pointer(&amp;changes[<span class="number">0</span>])</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(events) &gt; <span class="number">0</span> &#123;</span><br><span class="line">		event = unsafe.Pointer(&amp;events[<span class="number">0</span>])</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> kevent(kq, change, <span class="built_in">len</span>(changes), event, <span class="built_in">len</span>(events), timeout)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>只不过在注册监听的时候参数<code>events</code>与<code>timeout</code>都为<code>nil</code>。用vim打开<code>/tmp/foo</code>并增加一行，程序运行结果为下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">2020&#x2F;12&#x2F;06 16:25:45 event: &quot;&#x2F;tmp&#x2F;foo&quot;: CHMOD</span><br><span class="line">2020&#x2F;12&#x2F;06 16:25:45 event: &quot;&#x2F;tmp&#x2F;foo&quot;: WRITE</span><br><span class="line">2020&#x2F;12&#x2F;06 16:25:45 modified file: &#x2F;tmp&#x2F;foo</span><br><span class="line">2020&#x2F;12&#x2F;06 16:25:45 event: &quot;&#x2F;tmp&#x2F;foo&quot;: CHMOD</span><br></pre></td></tr></table></figure>
+<p>总结，两个goroutine，一个读，一个写，这是典型的顾客-消费者模型，关键在于对操作系统kevent的运用。</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://prometheus.io/docs/prometheus/latest/configuration/configuration/">https://prometheus.io/docs/prometheus/latest/configuration/configuration/</a></li>
+<li><a href="https://zh.wikipedia.org/wiki/Kqueue">https://zh.wikipedia.org/wiki/Kqueue</a></li>
+<li><a href="https://github.com/fsnotify/fsnotify">https://github.com/fsnotify/fsnotify</a></li>
+<li><a href="https://github.com/TrueFurby/go-callvis">https://github.com/TrueFurby/go-callvis</a></li>
+<li><a href="https://www.freebsd.org/cgi/man.cgi?query=kevent&amp;sektion=2">https://www.freebsd.org/cgi/man.cgi?query=kevent&amp;sektion=2</a></li>
+</ul>
+]]></content>
+  </entry>
+  <entry>
+    <title>rock k8s with k3d</title>
+    <url>/2019/10/23/rock-k8s-with-k3d/</url>
+    <content><![CDATA[<h2 id="k3d是什么"><a href="#k3d是什么" class="headerlink" title="k3d是什么?"></a>k3d是什么?</h2><blockquote>
+<p>Little helper to run Rancher Lab’s k3s in Docker</p>
+</blockquote>
+<p>k3s是一个轻量级的Kubernetes发行版，小到什么程度，运行起来只占用512M的内存（在我的树莓4B上亲测过, 确实如此），要知道在服务器完整的部署k8s集群，单个节点的内存占用都需要近2G，实在是过于臃肿。在学习k8s的过程中，不是每个人都有条件使用多节点真实机器来部署的（当然官方也提供了minikube），这里选择k3d还是因为k3s足够轻巧，对于个人学习与实践也足够友好。k3d让k3s运行在容器中，如此就可以轻松拥有一个k8s的“集群”了，废话不多说，动手。</p>
+<h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><p>下载安装kubectl</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># Debian&#x2F;Ubuntu</span><br><span class="line">apt-get update &amp;&amp; apt-get install -y apt-transport-https</span><br><span class="line">curl -s https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;apt&#x2F;doc&#x2F;apt-key.gpg | apt-key add -</span><br><span class="line">cat &lt;&lt;EOF &gt;&#x2F;etc&#x2F;apt&#x2F;sources.list.d&#x2F;kubernetes.list</span><br><span class="line">deb https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;kubernetes&#x2F;apt&#x2F; kubernetes-xenial main</span><br><span class="line">EOF</span><br><span class="line">apt-get update</span><br><span class="line">apt-get install -y kubectl</span><br></pre></td></tr></table></figure>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>脚本安装，足够简单</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># curl -s https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;rancher&#x2F;k3d&#x2F;master&#x2F;install.sh | bash</span><br></pre></td></tr></table></figure>
+<h3 id="创建集群"><a href="#创建集群" class="headerlink" title="创建集群"></a>创建集群</h3><p>创建5个工作节点的k8s”集群”</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># k3d c -w 5</span><br></pre></td></tr></table></figure>
+<p>创建完成后查看</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># k3d list</span><br><span class="line">+-------------+------------------------------+---------+---------+</span><br><span class="line">|    NAME     |            IMAGE             | STATUS  | WORKERS |</span><br><span class="line">+-------------+------------------------------+---------+---------+</span><br><span class="line">| k3s-default | docker.io&#x2F;rancher&#x2F;k3s:v0.9.1 | running |   5&#x2F;5   |</span><br><span class="line">+-------------+------------------------------+---------+---------+</span><br></pre></td></tr></table></figure>
+<p>看一下节点角色</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># kubectl get no</span><br><span class="line">NAME                       STATUS   ROLES    AGE     VERSION</span><br><span class="line">k3d-k3s-default-worker-2   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-1   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-4   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-3   Ready    worker   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-server     Ready    master   3h56m   v1.15.4-k3s.1</span><br><span class="line">k3d-k3s-default-worker-0   Ready    worker   3h56m   v1.15.4-k3s.1</span><br></pre></td></tr></table></figure>
+<p>一个主节点，5个负载节点的配置，还未发现k3d能够支持多个主节点的创建方式，目前k3s也还未支持master的高可用，不过因为是实验用途，倒是没啥大问题。</p>
+<h3 id="pause镜像问题"><a href="#pause镜像问题" class="headerlink" title="pause镜像问题"></a>pause镜像问题</h3><p>在国内，由于众所周知的原因，必然会遇到以下问题</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">...</span><br><span class="line">failed to pull image &quot;k8s.gcr.io&#x2F;pause:3.1&quot;: failed to resolve image &quot;k8s.gcr.io&#x2F;pause:3.1&quot;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>在k8s中，Pod是最小的调度单元，一个Pod中可以有多个容器共存，类似于多个容器运行在一台虚拟主机上，这些容器共享Linux的命名空间，而这个功能由pause容器提供。所以，下载不了pause镜像，就玩不转k8s了。微软提供了k8s的镜像代理服务，对微软的印象大好了。</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># docker pull gcr.azk8s.cn&#x2F;google-containers&#x2F;pause:3.1</span><br><span class="line"># docker tag gcr.azk8s.cn&#x2F;google-containers&#x2F;pause:3.1 k8s.gcr.io&#x2F;pause:3.1</span><br></pre></td></tr></table></figure>
+<p>然后将pause镜像导入各个“节点”，这样各个节点就可以直接使用“本地”pause镜像从而避免<code>docker pull k8s.gcr.io/pause:3.1</code></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># k3d i k8s.gcr.io&#x2F;pause:3.1</span><br><span class="line">INFO[0000] Saving images [k8s.gcr.io&#x2F;pause:3.1] from local docker daemon...</span><br><span class="line">INFO[0000] Saved images to shared docker volume</span><br><span class="line">INFO[0000] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-server]</span><br><span class="line">INFO[0001] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-4]</span><br><span class="line">INFO[0001] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-3]</span><br><span class="line">INFO[0002] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-2]</span><br><span class="line">INFO[0002] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-1]</span><br><span class="line">INFO[0003] Importing images [k8s.gcr.io&#x2F;pause:3.1] in container [k3d-k3s-default-worker-0]</span><br><span class="line">INFO[0003] Successfully imported images [k8s.gcr.io&#x2F;pause:3.1] in all nodes of cluster [k3s-default]</span><br><span class="line">INFO[0003] Cleaning up tarball</span><br><span class="line">INFO[0003] Deleted tarball</span><br><span class="line">INFO[0003] ...Done</span><br></pre></td></tr></table></figure>
+<p>现在， rock k8s with k3d!</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/rancher/k3d">https://github.com/rancher/k3d</a></li>
+<li><a href="https://k3s.io/">https://k3s.io</a></li>
+<li><a href="https://minikube.sigs.k8s.io/">https://minikube.sigs.k8s.io/</a></li>
+<li><a href="https://github.com/Azure/container-service-for-azure-china/blob/master/aks/README.md">https://github.com/Azure/container-service-for-azure-china/blob/master/aks/README.md</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>容器化</tag>
+        <tag>k8s</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>为什么IaC是个好主意？</title>
+    <url>/2020/11/29/%E4%B8%BA%E4%BB%80%E4%B9%88IaC%E6%98%AF%E4%B8%AA%E5%A5%BD%E4%B8%BB%E6%84%8F%EF%BC%9F/</url>
+    <content><![CDATA[<h1 id="IaC是什么？"><a href="#IaC是什么？" class="headerlink" title="IaC是什么？"></a>IaC是什么？</h1><p>IaC即Infrastructure as Code的简称，通常提到基础设施，会想到虚拟机、服务器、数据库、防火墙等词汇，在k8s一统江湖、云原生大行其道的当下，基础设施这一层已悄然发生的变化，在我的理解里k8s已隐隐成为未来的基础设施了。</p>
+<ul>
+<li>应用</li>
+<li>容器</li>
+<li>k8s</li>
+<li>虚拟机</li>
+<li>物理机</li>
+</ul>
+<h1 id="IaC能带来什么好处？"><a href="#IaC能带来什么好处？" class="headerlink" title="IaC能带来什么好处？"></a>IaC能带来什么好处？</h1><p>前面提到k8s是基础设施，那基础设施始终是为应用服务的。当一个应用开发人员开发完毕以后，部署这一步在以前是由运维完成的，运维的操作步骤无外乎以下几点：</p>
+<ol>
+<li>拉取代码</li>
+<li>编译打包</li>
+<li>配置部署</li>
+<li>交付测试</li>
+</ol>
+<p>这是以前套路，即使放到现在，也有不少人在用，就笔者的从业经验来说，不少开发人员并不知道自己的应用在生产是如何部署运行的。这在一定情况下并不是一件坏事，因为各尽其职，开发完成功能，运维负责部署，测试负责验证，每一个环节都是一个gap。可以试想以下场景：</p>
+<ol>
+<li>传统部署或者可以说是非容器化部署，因为生产某服务demo负载过高，需要进行水平扩容，增加实例，将实例注册到负载均衡服务器，然后使扩容生效。规范一点，需要提工单，有操作日志/记录，比较糙或者是紧急的情况下可能只是口头描述，然后线上操，这是完全有可能的，当然，如果要缩容，需要进行反向操作。</li>
+<li>如果服务部署是容器化的，容器化解决的是环境一致的问题，既然是解决环境一致的问题，那在开发环境当然也应该容器化，比较奇怪的是，因为职能的不同，不少开发并不懂容器化，服务项目Repo里面自然也不包括<code>Dockerfile</code>，当然更加不会有k8s的资源描述文件（或者是Helm的Chart包）了（这到底是不是个问题呢，因人而异，以我的角度来讲，这是个问题）。<br>对于场景1，我认为问题在于变动没有追溯或不易追溯，come on, 明明git就是一个非常好的追溯工具好不好，当然，如果基础设施是k8s，定义好HPA就可以了，如下所示：<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">apiVersion: autoscaling&#x2F;v2beta1</span><br><span class="line">kind: HorizontalPodAutoscaler</span><br><span class="line">metadata:</span><br><span class="line">  name: demo</span><br><span class="line">spec:</span><br><span class="line">  scaleTargetRef:</span><br><span class="line">    apiVersion: apps&#x2F;v1</span><br><span class="line">    kind: Deployment</span><br><span class="line">    name: demo</span><br><span class="line">  minReplicas: 1</span><br><span class="line">  maxReplicas: 3</span><br><span class="line">  metrics:</span><br><span class="line">  - type: Resource</span><br><span class="line">    resource:</span><br><span class="line">      name: cpu</span><br><span class="line">      target:</span><br><span class="line">        type: AverageUtilization</span><br><span class="line">        averageUtilization: 70</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+对于场景2的问题，个人觉得是一个认知问题，容器化时代，开发人员需要知道自己的服务是如何容器化（个人认为这是容器化时代开发人员的基本修养），试想：作为开发人员的你，你定义好了<code>Dockerfile</code>以及k8s资源文件，有没有一种一切尽在掌握的感觉。</li>
+</ol>
+<h1 id="IaC推进的障碍？"><a href="#IaC推进的障碍？" class="headerlink" title="IaC推进的障碍？"></a>IaC推进的障碍？</h1><p>基础设施代码代码化这是一个趋势，<strong>可描述</strong>与<strong>可追溯</strong>这是一大优势，所以才会诞生“DevOps工程师”（一家之言），用于弥补开发的运维短板和运维的开发短板。但是没有让开发、运维、测试都参与进来，这其中一部分原因是由于工作职能划分的过于清晰，当然，也可能是部门墙，还有习惯的改变、新知识和概念的学习成本等，这些都是问题，以笔者浅见，解决这些问题的方法不是规避，新技术实施和推广，大家不免会有疑惑，或许让愿意接受的人来拥抱与参与会是一个好方法，用脚投票，只要是真正能带来效率提升的方法，相信没有人会拒绝的。</p>
+<p>ps:<br>这是一个<em>后端开发</em>，曾在质量团队呆过，做过PaaS平台，给运维团队做过乙方后，对IaC的一点浅见，真的是浅见，但也因此爱上了IaC</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://insights.thoughtworks.cn/nfrastructure-as-code/">https://insights.thoughtworks.cn/nfrastructure-as-code/</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Infrastructure_as_code">https://en.wikipedia.org/wiki/Infrastructure_as_code</a></li>
+<li><a href="https://kubernetes.io/zh/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/">https://kubernetes.io/zh/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>又一个CI/CD系统-Tekton</title>
+    <url>/2020/11/19/%E5%8F%88%E4%B8%80%E4%B8%AACI-CD%E7%B3%BB%E7%BB%9F-Tekton/</url>
+    <content><![CDATA[<h1 id="Tekton是什么？"><a href="#Tekton是什么？" class="headerlink" title="Tekton是什么？"></a>Tekton是什么？</h1><blockquote>
+<p>Tekton 是一个强大且灵活的 Kubernetes 原生开源框架，可用于创建持续集成和交付 (CI/CD) 系统。该框架可让您跨多个云服务商或本地系统进行构建、测试和部署，而无需操心基础实现详情。</p>
+</blockquote>
+<p>从定义可知，Tekton是一种新的CI/CD系统，正如常见的Jenkins、Drone、GitLab CI做的事情一样，特殊之处在于它是生于Kubernetes，长于Kubernetes。</p>
+<h1 id="安装Tekton"><a href="#安装Tekton" class="headerlink" title="安装Tekton"></a>安装Tekton</h1><p>因为Tekton运行环境依赖于k8s，所以我们首先必须得有一个k8s环境，笔者本地使用的是minikube，如下本地启动一个k8s</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">minikube start -p k8s -v10 --image-mirror-country cn --iso-url&#x3D;https:&#x2F;&#x2F;kubernetes.oss-cn-hangzhou.aliyuncs.com&#x2F;minikube&#x2F;iso&#x2F;minikube-v1.6.0.iso  --image-repository registry.cn-hangzhou.aliyuncs.com&#x2F;google_containers --vm-driver&#x3D;hyperkit --registry-mirror&#x3D;https:&#x2F;&#x2F;dq4otk2m.mirror.aliyuncs.com --kubernetes-version&#x3D;1.16.0</span><br></pre></td></tr></table></figure>
+<p>集群启动以后就可以安装Tekton，按照官网的描述，可按如下安装</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">kubectl apply --filename https:&#x2F;&#x2F;storage.googleapis.com&#x2F;tekton-releases&#x2F;pipeline&#x2F;latest&#x2F;release.yaml</span><br></pre></td></tr></table></figure>
+<p>不过，因于Tekton需要依赖众多gcr站点镜像，安装过程需要先预先准备好这些镜像，笔者使用github的action将这些镜像转移到了阿里云的镜像中心，并将Tekton的安装文件重新换成了阿里云的镜像地址，项目地址为：</p>
+<p><a href="https://github.com/wusphinx/tektoncd-cn">https://github.com/wusphinx/tektoncd-cn</a></p>
+<p>国内码云地址为：</p>
+<p><a href="https://gitee.com/wucentaur/tektoncd-cn">https://gitee.com/wucentaur/tektoncd-cn</a></p>
+<p>项目目录如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">├── LICENSE</span><br><span class="line">├── README.md</span><br><span class="line">├── example</span><br><span class="line">│   ├── pipelineresource.yaml</span><br><span class="line">│   ├── task-test.yaml</span><br><span class="line">│   └── taskrun.yaml</span><br><span class="line">└── tekton</span><br><span class="line">    ├── tekton-dashboard-release.yaml</span><br><span class="line">    └── tekton.yaml</span><br></pre></td></tr></table></figure>
+<p>如此，可以通过<code>kubectl apply -f tekton/</code>完成安装，顺带也把Tekton的dashboard也安装了，检查安装状态</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  ~ kubectl get pods -n tekton-pipelines</span><br><span class="line">NAME                                          READY   STATUS    RESTARTS   AGE</span><br><span class="line">tekton-dashboard-5dcb9688bd-pls8b             1&#x2F;1     Running   1          18h</span><br><span class="line">tekton-pipelines-controller-6564b64ff-7gwbc   1&#x2F;1     Running   1          18h</span><br><span class="line">tekton-pipelines-webhook-5d6b9646b9-mr7jl     1&#x2F;1     Running   1          18h</span><br></pre></td></tr></table></figure>
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><p>既然是CI/CD系统，那流水线一定是必不可少的，前面说到Tekton生于k8s，所以才有了CRD定义的流水线，我们先定义获取代码仓库的资源</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1alpha1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">PipelineResource</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">tekton-example</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">params:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">url</span></span><br><span class="line">      <span class="attr">value:</span> <span class="string">https://github.com/wusphinx/multistage</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">revision</span></span><br><span class="line">      <span class="attr">value:</span> <span class="string">main</span></span><br></pre></td></tr></table></figure>
+<p>简洁明了，如果代码仓库是gitlab，用gitlab ci来做，这一步是隐式的，用Jenkins的话，没有与gitlab集成的情况下，也需要显示配置。<br>定义流水线任务（只是为了演示，当然你可以自定义其它任务）</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Task</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">repo</span></span><br><span class="line">      <span class="attr">type:</span> <span class="string">git</span></span><br><span class="line">  <span class="attr">steps:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">run-test</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">golang:1.13-alpine</span></span><br><span class="line">    <span class="attr">workingDir:</span> <span class="string">/workspace/repo</span></span><br><span class="line">    <span class="attr">env:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;GO111MODULE&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">&quot;on&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">&quot;GOPROXY&quot;</span></span><br><span class="line">        <span class="attr">value:</span> <span class="string">&quot;https://goproxy.cn,direct&quot;</span></span><br><span class="line">    <span class="attr">command:</span> [<span class="string">&quot;go&quot;</span>]</span><br><span class="line">    <span class="attr">args:</span> [<span class="string">&quot;mod&quot;</span>, <span class="string">&quot;download&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>任务的核心是对<em>某个</em>golang项目执行<code>go mod download</code>操作，<code>PipelineResource</code>跟<code>Task</code>缺少一纽带联系起来，这个纽带就是<code>TaskRun</code></p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">tekton.dev/v1beta1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">TaskRun</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">testrun</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">taskRef:</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">resources:</span></span><br><span class="line">    <span class="attr">inputs:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">repo</span></span><br><span class="line">      <span class="attr">resourceRef:</span></span><br><span class="line">        <span class="attr">name:</span> <span class="string">tekton-example</span></span><br></pre></td></tr></table></figure>
+<p>示例都准备好了，可以直接执行</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  ~ kubectl apply -f example&#x2F;</span><br><span class="line">pipelineresource.tekton.dev&#x2F;tekton-example created</span><br><span class="line">task.tekton.dev&#x2F;test created</span><br><span class="line">taskrun.tekton.dev&#x2F;testrun created</span><br></pre></td></tr></table></figure>
+<p>可通过dashboard查看任务执行结果如下所示：</p>
+<p><img src="/images/tekton.png" alt="tekton"></p>
+<p>回头来看资源的作用就很容易理解了</p>
+<ul>
+<li>PipelineResource： 流水线的资源，示例就是指代码仓库了</li>
+<li>Task： 流水线要执行的任务与步骤定义</li>
+<li>TaskRun：将资源与任务做关联并执行</li>
+</ul>
+<p>这么看若要完成一个流水线，至少要定义三类资源才行，这样代码跟CI/CD是分离的，需要在Tekton平台上做这些配置。当然因为Tekton本身就在k8s集群中，可以用尽k8s的资源调度优势，不过gitlab runner也可以安装在k8s中，从使用体验上来讲Tekton的优势并不明显，不过，这也是因为gitlab runner与gitlab是一家天然集成的缘故，Tekton的方式就是在做解耦，并无不妥。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>如此看来，Tekton是另一个CI/CD系统，抽象粒度很细，从实际使用效果来看并未带来明显的好处。最大的优势在于原生支持k8s，不过其它CI/CD平台也在向k8s靠拢，这个优势也并不十分突出。一点浅见，欢迎拍砖。</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://cloud.google.com/tekton">https://cloud.google.com/tekton</a></li>
+<li><a href="https://www.infoq.cn/article/arayxto19bd6avbmxfqz">https://www.infoq.cn/article/arayxto19bd6avbmxfqz</a></li>
+<li><a href="https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/">https://www.qikqiak.com/post/create-ci-pipeline-with-tekton-1/</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>后浪-GitOps</title>
+    <url>/2020/11/05/%E5%90%8E%E6%B5%AA-GitOps/</url>
+    <content><![CDATA[<p>说到GitOps就一定要提DevOps了，如果说DevOps是前浪，那GitOps就是后浪了。为了表达对前辈的尊重，我们再次回顾一下DevOps：</p>
+<blockquote>
+<p>DevOps（Development和Operations的组合词）是一种重视“软件开发人员（Dev）”和“IT运维技术人员（Ops）”之间沟通合作的文化、运动或惯例。透过自动化“软件交付”和“架构变更”的流程，来使得构建、测试、发布软件能够更加地快捷、频繁和可靠。</p>
+</blockquote>
+<p>诚然，DevOps是一种讲究合作的文化，一定程序上打破了开发、运维、测试等软件开发的职能界限，让整个软件开发的流程更快，以此为标尺，我们可以度量一个公司是存在DevOps文化，是否在推动、践行DevOps文化。</p>
+<p>回归正题，说到浪，没有前浪，哪来后浪，没有DevOps， GitOps也只是空谈，那么GitOps到底是翻的是哪种浪花？</p>
+<p>GitOps的思想源自于一家叫做Weaveworks的公司，这家公司开源了一个名为Flux的GitOps的Operator，它运行在Kubernetes或OpenShift集群内。作用是提供自动监控，保证Kubernetes集群的状态与Git中提供的配置相匹配。</p>
+<p>但GitOps不仅仅是Flux，也不仅仅是ArgoCD等同类工具。得益于从DevOps以及可靠性工程的思想经验，GitOps已经成为云原生开发的最新热点趋势。</p>
+<p>如果它不是简单的工具，那么GitOps到底是什么？采用它所倡导的最佳实践会给DevOps团队及其构建的应用带来哪些优势？</p>
+<h1 id="GitOps到底是什么？"><a href="#GitOps到底是什么？" class="headerlink" title="GitOps到底是什么？"></a>GitOps到底是什么？</h1><p>Weaveworks将GitOps总结为Kubernetes和其他用于云原生开发的技术的一种运营模式，</p>
+<ul>
+<li>提供一套最佳实践，为容器化集群和应用统一部署、管理和监控。</li>
+<li>提供了一条端到端的CI/CD管道以及Git工作流。</li>
+</ul>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-20616a21c53e7fcf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>对GitOps的扩展定义是，它是一个为云原生应用实现持续部署的标准，它注重以开发者为中心的基础设施运营体验。通过使用开发者已经熟悉的工具–Git以及持续部署工具（可选工具很多，比如我们正在用的Jenkins，但我推荐GitLab）–来实现Kubernetes集群管理及应用交付。</p>
+<p>Git担负起声明式基础设施和应用的唯一定义工具。任何Git和K8s集群中实际运行的内容之间的差异都会被监测到。然后Kubernetes控制器可以回滚集群以与Git相匹配，或自动更新它。</p>
+<p>将Git置于交付管道的中心，允许开发人员使用他们熟悉的工具（不用重新学习，没有认知负担）进行拉取请求。一个自动化的流程将仓库中的描述状态与生产环境进行匹配。 GitOps被描述为 “在生产环境中管理应用程序的控制器”。</p>
+<h1 id="GitOps原则分解"><a href="#GitOps原则分解" class="headerlink" title="GitOps原则分解"></a>GitOps原则分解</h1><p>GitOps管理Kubernetes集群的工作流程基于以下4个原则。</p>
+<p>#1 声明式描述整个系统</p>
+<p>GitOps与包括Kubernetes在内的云原生工具经常代表的声明式系统合作。声明式系统可以被视为代码，因为配置是由事实而不是指令来保证的。当一个应用程序用声明的方式在Git中进行版本化时，那它就一定是明确的-这就是GitOps的核心所在。</p>
+<p>由于声明或者说是定义真实明确的记录在Git中，应用程序可以很容易地从Kubernetes部署或者回滚。在最坏的情况下，集群的基础架构可以从Git仓库中准确而快速地恢复。</p>
+<p>#2 Git决定了系统状态</p>
+<p>如果生产版本的声明（K8s中的资源部署）与Git版本（声明式定义）有出入，就应该发出警报。如果需要回滚，简单的Git还原就能恢复正确的系统声明。</p>
+<p>Git强大的安全性意味着代码的作者和出处始终是可追踪的，这意味着系统的每一次变更都有迹可寻。</p>
+<p>#3 自动化部署</p>
+<p>以Git作为生产集群必须准确反映声明的状态，对该状态的更改可以自动更新部署。由于状态定义存在于生产环境之外的Git中，所以系统变更时不需要集群凭证。所以，GitOps可以实现做什么和怎么做的分离。</p>
+<p>#4 软件代理如果出现分歧就会报警</p>
+<p>如果生产集群的实际情况与你所期望的系统软件不一致，可以发出警报。这样就能整个系统的自我修复，包括在发生人为错误的情况下。</p>
+<h1 id="GitOps工作流"><a href="#GitOps工作流" class="headerlink" title="GitOps工作流"></a>GitOps工作流</h1><p><img src="https://upload-images.jianshu.io/upload_images/44480-b3660d76c74e64f8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<h1 id="为什么要在云原生开发中采用-GitOps？"><a href="#为什么要在云原生开发中采用-GitOps？" class="headerlink" title="为什么要在云原生开发中采用 GitOps？"></a>为什么要在云原生开发中采用 GitOps？</h1><p>我们已经介绍了GitOps的特点，但具体的商业案例对系统的好处是什么？你很难找到一种持续部署技术或方法论不承诺更快、更频繁的部署（真实需求就是快速频繁的迭代和部署）。GitOps也不例外，但有很多东西可以支持这个承诺。</p>
+<p>自动交付管道会将Git上的变更推送到你的基础架构中。GitOps更进一步。它使用像 Weaveworks 的 Flux 这样的工具来自动比较集群的状态和 Git 配置。集群中的操作者会触发Kubernetes内部的部署，从而使任何其他CD工具的需求变得多余。</p>
+<p>这意味着CI不需要访问集群。每一次更新都是原子的、事务性的，并且在Git提交日志中。要么成功，要么失败。由于完全基于代码，不需要增加新的基础设施。</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-1dfd2a5f1fbebc9e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>Git作为基础架构和应用代码的 “真相之源”，可以加快部署和可靠性，因为任何错误都会被迅速发现。这样一来，无论是回滚生产状态还是从Git上更新，都非常容易</p>
+<h1 id="XOps"><a href="#XOps" class="headerlink" title="XOps"></a>XOps</h1><p>无论是DevOps还是GitOps亦或是AIOpx，最终的目的都是为了Ops，将软件产品提供给受众，在X这一端也可以说是部署之前有很多种方法以及工具，我们姑且将X理解为CI，那Jenkins作为这一领域的前浪，依旧发挥着能量，不过后浪GitLab的发展也是迅猛</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-c5ac73f0e8f76b69.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>公司目前使用的CI工具正是Jenkins，当我试图使用jenkins去实践DevOps甚至是GitOps,  我需要做以下几件事</p>
+<ol>
+<li>登录Jenkins平台上，新建一个PipeLine流水线；</li>
+<li>配置好代码仓库demo以及代码访问权限；</li>
+<li>编写Jenkinsfile；</li>
+<li>因为测试环境Jenkins暂时没有与我们的代码仓库GitLab做集成，所以我不得不找到自己的项目，新建一个webhook，指向步骤1）的任务</li>
+<li>因为需要知道流水线最终的运行结果，还需要配置任务通知</li>
+</ol>
+<p>对于我而言，有以下几个问题：</p>
+<ol>
+<li>我给项目demo配置了Jenkins流水线，这个项目也可能有其它贡献者，如果我不写文档，他们可能并不知道这件事，结果就需要问我，如同我给其它项目贡献需要问其它人一样。</li>
+<li>其它人就算知道我配置了Jenkins流水线，总还得知道Jenkins服务的地址以及开通对应的权限</li>
+</ol>
+<p>所以测试环境常规发布过程归纳起来就是：</p>
+<ol>
+<li>开发完成，push代码；</li>
+<li>登录Jenkins，选择分支，并完成发布</li>
+<li>关注发布结果</li>
+</ol>
+<p>当然，这样做依然可以达到最终完成部署的目的。</p>
+<p>可以设想一下，当一个新人开发者拿到代码仓库时，他没法快速知道整个CI/CD流程，但是实际上这些CI/CD流程是相对固定，是有规律可循可以用语言描述的的，是可以固化在代码仓库里面的，这就是为什么我更倾向于使用GitLab CI/CD的原因。</p>
+<ol>
+<li>天然与GitLab集成(与GitLab同出一家)</li>
+<li>符合Iac(基础设施即代码)的哲学</li>
+</ol>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-dcef583873b9af79.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>CI/CD各阶段需要做的事情在.gitlab-ci.yml文件中</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">.....</span></span><br><span class="line"><span class="attr">stages:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">test</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">build</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">deploy-dev</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">deploy-prod</span></span><br><span class="line"><span class="attr">lint:</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">test</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">harbor.yourprivate.com/base/golangci-lint:v1.21-alpine</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">golangci-lint</span> <span class="string">run</span> <span class="string">-v</span></span><br><span class="line">  <span class="attr">allow_failure:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">build:</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">build</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">docker</span> <span class="string">build</span> <span class="string">.</span> <span class="string">-t</span> <span class="string">harbor.yourprivate.com/alert-service/gitops:$CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">docker</span> <span class="string">login</span> <span class="string">--username=$DOCKER_PRIVATE_USEE</span> <span class="string">harbor.yourprivate.com</span> <span class="string">--password</span> <span class="string">$DOCKER_PRIVATE_KEY</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">docker</span> <span class="string">push</span> <span class="string">harbor.yourprivate.com/alert-service/gitops:$CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA</span></span><br><span class="line"><span class="attr">deploy-dev:</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">deploy-dev</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">cnych/kustomize:v1.0</span></span><br><span class="line">  <span class="attr">before_script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">remote</span> <span class="string">set-url</span> <span class="string">origin</span> <span class="string">https://$&#123;CI_USERNAME&#125;:$&#123;CI_TOKEN&#125;@git.myprivate.com/wuql/gitops.git</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">config</span> <span class="string">--global</span> <span class="string">user.email</span> <span class="string">&quot;gitlab@git.k8s.local&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">config</span> <span class="string">--global</span> <span class="string">user.name</span> <span class="string">&quot;GitLab CI/CD&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">checkout</span> <span class="string">-B</span> <span class="string">$CI_COMMIT_BRANCH</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">pull</span> <span class="string">origin</span> <span class="string">$CI_COMMIT_BRANCH</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">cd</span> <span class="string">deployment/dev</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">kustomize</span> <span class="string">edit</span> <span class="string">set</span> <span class="string">image</span> <span class="string">harbor.yourprivate.com/alert-service/gitops:$CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">cat</span> <span class="string">kustomization.yaml</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">commit</span> <span class="string">-am</span> <span class="string">&#x27;[skip ci] DEV image update&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">push</span> <span class="string">origin</span> <span class="string">$CI_COMMIT_BRANCH</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">dev</span></span><br><span class="line"></span><br><span class="line"><span class="attr">deploy-prod:</span></span><br><span class="line">  <span class="attr">stage:</span> <span class="string">deploy-prod</span></span><br><span class="line">  <span class="attr">image:</span> <span class="string">cnych/kustomize:v1.0</span></span><br><span class="line">  <span class="attr">before_script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">remote</span> <span class="string">set-url</span> <span class="string">origin</span> <span class="string">https://$&#123;CI_USERNAME&#125;:$&#123;CI_TOKEN&#125;@git.myprivate.com/wuql/gitops.git</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">config</span> <span class="string">--global</span> <span class="string">user.email</span> <span class="string">&quot;gitlab@git.k8s.local&quot;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">config</span> <span class="string">--global</span> <span class="string">user.name</span> <span class="string">&quot;GitLab CI/CD&quot;</span></span><br><span class="line">  <span class="attr">script:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">checkout</span> <span class="string">-B</span> <span class="string">$CI_COMMIT_BRANCH</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">pull</span> <span class="string">origin</span> <span class="string">$CI_COMMIT_BRANCH</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">cd</span> <span class="string">deployment/prod</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">kustomize</span> <span class="string">edit</span> <span class="string">set</span> <span class="string">image</span> <span class="string">harbor.yourprivate.com/alert-service/gitops:$CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">cat</span> <span class="string">kustomization.yaml</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">commit</span> <span class="string">-am</span> <span class="string">&#x27;[skip ci] PROD image update&#x27;</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">git</span> <span class="string">push</span> <span class="string">origin</span> <span class="string">$CI_COMMIT_BRANCH</span></span><br><span class="line">  <span class="attr">only:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="string">master</span></span><br><span class="line">  <span class="attr">when:</span> <span class="string">manual</span></span><br></pre></td></tr></table></figure>
+<p>忽略细节部分，这段描述可以相对容易地理解为做了以下几件事</p>
+<ol>
+<li>Test：此处是静态检查）</li>
+<li>Build：构建镜像</li>
+<li>Deploy：根据分支名部署到对应环境(master分支的部署需要手动执行)</li>
+</ol>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-7267dd120779e465.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>虽然Weaveworks最早提出了GitOps这一理念，也有许多GitOps工具，比如flux、argocd、jenkins-X， 我们选用其中的argocd。</p>
+<p>目前公司的CI/CD平台使用的是jenkins,  虽然也可以用，但是需要在jenkins配置任务以及仓库的代码访问权限，相对繁琐，其实公司的代码托管平台gitlab不仅仅可以用来做代码仓库，也可以做CI/CD, 因此，我自己搭建了gitlab runner将集成到公司的gitlab，项目代码目录如下</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-7086a6e1ebf1fc17.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>其中main.go为http server代码</p>
+<p>Dockerfile将仓库代码通过Multistage打包成开箱即用的窗口镜像</p>
+<p>deployment为k8s部署的资源描述，dev为开发环境，prod为生产环境，对应的，我们需要在argocd的管理平台上新建两个应用</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-ec56cebc0052ca72.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>背后就是在k8s中创建了applications.argoproj.io这个crd的实例</p>
+<p>应用的描述如下所示</p>
+<figure class="highlight yaml"><table><tr><td class="code"><pre><span class="line"><span class="string">...</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">destination:</span></span><br><span class="line">    <span class="attr">namespace:</span> <span class="string">dev</span></span><br><span class="line">    <span class="attr">server:</span> <span class="string">https://kubernetes.default.svc</span></span><br><span class="line">  <span class="attr">project:</span> <span class="string">default</span></span><br><span class="line">  <span class="attr">source:</span></span><br><span class="line">    <span class="attr">path:</span> <span class="string">deployment/dev</span></span><br><span class="line">    <span class="attr">repoURL:</span> <span class="string">https://git.myprivate.com/wuql/gitops.git</span></span><br><span class="line">    <span class="attr">targetRevision:</span> <span class="string">dev</span></span><br><span class="line">  <span class="attr">syncPolicy:</span></span><br><span class="line">    <span class="attr">automated:</span></span><br><span class="line">      <span class="attr">prune:</span> <span class="literal">true</span></span><br><span class="line">      <span class="attr">selfHeal:</span> <span class="literal">true</span></span><br><span class="line"><span class="string">...</span></span><br></pre></td></tr></table></figure>
+<p>当有人误将生产应用删除的时候，</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">kubectl delete deploy gitops -n dev</span><br></pre></td></tr></table></figure>
+<p>argocd会监测到这一情况<br><img src="https://upload-images.jianshu.io/upload_images/44480-14cf26e14e2975e8.png!thumbnail?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="图片"></p>
+<p>并重新将应用资源建立起来</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-8515b1fbe1950a5f.png!thumbnail?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="图片"></p>
+<p>至此，算是实践了一下gitops的思想。</p>
+<h1 id="解决了什么问题？"><a href="#解决了什么问题？" class="headerlink" title="解决了什么问题？"></a>解决了什么问题？</h1><p>仔细想想，如果我们不用gitops这一套思路，gitlab runner本身就在k8sk, 我可以在gitlab的ci完成后直接apply部署，这样最终也能达到部署这一目的，gitops思路很大的一点不同在于【部署】这件事由opertaor来保证，并且持续检查部署状态是否与git仓库定义的是否一致，如果说在gitlab runner中可以一气呵成完成CI/CD, 那么gitops就是将CI/CD解耦了，这样带来的好处是否大于收益，个人认为需要看基础设施是否完善，如果本身CI/CD本身都做的很好，可以尝试，但是根据笔者的观察，IaC的思路并不是那么容易被接受的，思路可以借鉴，自动化确实很美好，不过也是道阻且长，最重要还是能解决团队当时当下的具体问题。</p>
+<p>参考</p>
+<ul>
+<li><a href="https://zh.wikipedia.org/wiki/DevOps">https://zh.wikipedia.org/wiki/DevOps</a></li>
+<li><a href="https://www.weave.works/technologies/gitops/">https://www.weave.works/technologies/gitops/</a></li>
+<li><a href="https://docs.docker.com/develop/develop-images/multistage-build/">https://docs.docker.com/develop/develop-images/multistage-build/</a></li>
+<li><a href="https://argoproj.github.io/argo-cd/getting_started/">https://argoproj.github.io/argo-cd/getting_started/</a></li>
+<li><a href="https://kruschecompany.com/gitops/">https://kruschecompany.com/gitops/</a></li>
+<li><a href="https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/">https://www.qikqiak.com/post/gitlab-ci-argo-cd-gitops/</a></li>
+<li><a href="https://about.gitlab.com/devops-tools/jenkins-vs-gitlab/">https://about.gitlab.com/devops-tools/jenkins-vs-gitlab/</a></li>
+<li><a href="https://about.gitlab.com/stages-devops-lifecycle/continuous-integration/">https://about.gitlab.com/stages-devops-lifecycle/continuous-integration/</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>后端开发视角下的CRD之一</title>
+    <url>/2020/11/23/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E8%A7%86%E8%A7%92%E4%B8%8B%E7%9A%84CRD%E4%B9%8B%E4%B8%80/</url>
+    <content><![CDATA[<h1 id="CRD是什么？"><a href="#CRD是什么？" class="headerlink" title="CRD是什么？"></a>CRD是什么？</h1><p>Custom Resource Definitionsr的简称，它是对Kubernetes API 的扩展。打个并不严谨的比方，从所周知<code>Service</code>、<code>Pod</code>、<code>Deployment</code>等是k8s内置的资源<strong>类型</strong>，因为k8s使用golang开发，如果把<code>Pod</code>类比为golang中的<code>int</code>类型，那么CRD可以类比为golang中的<code>interface</code>: 抽象类型，这个比喻可能不那么恰当，只是为了方便个人理解。而关于CRD的产生过程，还有一段非常有坡的故事，可参考认文末张磊老师的的<strong>Kubernetes API 与 Operator：不为人知的开发者战争</strong>链接</p>
+<h1 id="如何编写自己的CRD？"><a href="#如何编写自己的CRD？" class="headerlink" title="如何编写自己的CRD？"></a>如何编写自己的CRD？</h1><p>对CRD有了初步了解之后，我们要如何写出自己想要的CRD呢？<br>就像我们写Http Server一样，有<code>Gin</code>等框架，写CRD同样也有对应的框架：kubebuilder。下面，我们一下一步来编辑自己的CRD</p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="准备工具"><a href="#准备工具" class="headerlink" title="准备工具"></a>准备工具</h3><p>首先得自备一个k8s集群（笔者使用的是minikube）,根据自己的开发环境下载kubebuilder工具</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">os&#x3D;$(go env GOOS)</span><br><span class="line">arch&#x3D;$(go env GOARCH)</span><br><span class="line"></span><br><span class="line"># download kubebuilder and extract it to tmp</span><br><span class="line">curl -L https:&#x2F;&#x2F;go.kubebuilder.io&#x2F;dl&#x2F;2.3.1&#x2F;$&#123;os&#125;&#x2F;$&#123;arch&#125; | tar -xz -C &#x2F;tmp&#x2F;</span><br><span class="line"></span><br><span class="line"># move to a long-term location and put it on your path</span><br><span class="line"># (you&#39;ll need to set the KUBEBUILDER_ASSETS env var if you put it somewhere else)</span><br><span class="line">sudo mv &#x2F;tmp&#x2F;kubebuilder_2.3.1_$&#123;os&#125;_$&#123;arch&#125; &#x2F;usr&#x2F;local&#x2F;kubebuilder</span><br><span class="line">export PATH&#x3D;$PATH:&#x2F;usr&#x2F;local&#x2F;kubebuilder&#x2F;bin</span><br></pre></td></tr></table></figure>
+<h3 id="项目初始化"><a href="#项目初始化" class="headerlink" title="项目初始化"></a>项目初始化</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mkdir $GOPATH&#x2F;src&#x2F;example</span><br><span class="line">cd $GOPATH&#x2F;src&#x2F;example</span><br><span class="line">kubebuilder init --domain my.domain</span><br></pre></td></tr></table></figure>
+<p>项目结构如下所示：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── Makefile</span><br><span class="line">├── PROJECT</span><br><span class="line">├── bin</span><br><span class="line">│   └── manager</span><br><span class="line">├── config</span><br><span class="line">│   ├── certmanager</span><br><span class="line">│   ├── default</span><br><span class="line">│   ├── manager</span><br><span class="line">│   ├── prometheus</span><br><span class="line">│   ├── rbac</span><br><span class="line">│   └── webhook</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── hack</span><br><span class="line">│   └── boilerplate.go.txt</span><br><span class="line">└── main.go</span><br></pre></td></tr></table></figure>
+<h3 id="创建API"><a href="#创建API" class="headerlink" title="创建API"></a>创建API</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">kubebuilder create api --group webapp --version v1 --kind Guestbook</span><br></pre></td></tr></table></figure>
+<p>到这一步，语义理解还是非常清楚的，就个人的理解：定义了一个RESTful的URI，类型、资源名称、Group等，很像我们平时写HTTP API的感觉，事实上，我们正在做的也确实在写一个API，目录结构如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">.</span><br><span class="line">├── Dockerfile</span><br><span class="line">├── Makefile</span><br><span class="line">├── PROJECT</span><br><span class="line">├── api</span><br><span class="line">│   └── v1</span><br><span class="line">├── bin</span><br><span class="line">│   └── manager</span><br><span class="line">├── config</span><br><span class="line">│   ├── certmanager</span><br><span class="line">│   ├── crd</span><br><span class="line">│   ├── default</span><br><span class="line">│   ├── manager</span><br><span class="line">│   ├── prometheus</span><br><span class="line">│   ├── rbac</span><br><span class="line">│   ├── samples</span><br><span class="line">│   └── webhook</span><br><span class="line">├── controllers</span><br><span class="line">│   ├── guestbook_controller.go</span><br><span class="line">│   └── suite_test.go</span><br><span class="line">├── go.mod</span><br><span class="line">├── go.sum</span><br><span class="line">├── hack</span><br><span class="line">│   └── boilerplate.go.txt</span><br><span class="line">└── main.go</span><br></pre></td></tr></table></figure>
+<h3 id="自定义类型：Guestbook"><a href="#自定义类型：Guestbook" class="headerlink" title="自定义类型：Guestbook"></a>自定义类型：Guestbook</h3><p>以下即是我们新创建的CRD：Guestbook的类型结构</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; Guestbook is the Schema for the guestbooks API</span><br><span class="line">type Guestbook struct &#123;</span><br><span class="line">	metav1.TypeMeta   &#96;json:&quot;,inline&quot;&#96;</span><br><span class="line">	metav1.ObjectMeta &#96;json:&quot;metadata,omitempty&quot;&#96;</span><br><span class="line"></span><br><span class="line">	Spec   GuestbookSpec   &#96;json:&quot;spec,omitempty&quot;&#96;</span><br><span class="line">	Status GuestbookStatus &#96;json:&quot;status,omitempty&quot;&#96;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们来跟k8s内置类型<a href="https://sourcegraph.com/github.com/kubernetes/kubernetes@2db51c85b948f8180b427964b43f84e517c6e35e/-/blob/staging/src/k8s.io/api/apps/v1/types.go#L254:6">Deployment</a>对比一下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; Deployment enables declarative updates for Pods and ReplicaSets.</span><br><span class="line">type Deployment struct &#123;</span><br><span class="line">	metav1.TypeMeta &#96;json:&quot;,inline&quot;&#96;</span><br><span class="line">	&#x2F;&#x2F; Standard object metadata.</span><br><span class="line">	&#x2F;&#x2F; +optional</span><br><span class="line">	metav1.ObjectMeta &#96;json:&quot;metadata,omitempty&quot; protobuf:&quot;bytes,1,opt,name&#x3D;metadata&quot;&#96;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Specification of the desired behavior of the Deployment.</span><br><span class="line">	&#x2F;&#x2F; +optional</span><br><span class="line">	Spec DeploymentSpec &#96;json:&quot;spec,omitempty&quot; protobuf:&quot;bytes,2,opt,name&#x3D;spec&quot;&#96;</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Most recently observed status of the Deployment.</span><br><span class="line">	&#x2F;&#x2F; +optional</span><br><span class="line">	Status DeploymentStatus &#96;json:&quot;status,omitempty&quot; protobuf:&quot;bytes,3,opt,name&#x3D;status&quot;&#96;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>类型结构几乎是一模一样的，可以看到<code>metav1.TypeMeta</code>与<code>metav1.ObjectMeta</code>是内嵌结构体，这是类型的一些公共定义，篇幅有限，就不在此处不展开了，<code>Spec</code>是需要注意的，前面我们定义了一个资源及期接口，那<code>Spec</code>可以认为是接口的入参了，<code>Status</code>: 顾名思义，资源的状态</p>
+<h3 id="入参校验"><a href="#入参校验" class="headerlink" title="入参校验"></a>入参校验</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">type GuestbookSpec struct &#123;</span><br><span class="line">	&#x2F;&#x2F; INSERT ADDITIONAL SPEC FIELDS - desired state of cluster</span><br><span class="line">	&#x2F;&#x2F; Important: Run &quot;make&quot; to regenerate code after modifying this file</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; Foo is an example field of Guestbook. Edit Guestbook_types.go to remove&#x2F;update</span><br><span class="line">	&#x2F;&#x2F; 设定参数Foo的取值范围，也就是做入参校验</span><br><span class="line"></span><br><span class="line">	&#x2F;&#x2F; +kubebuilder:validation:MaxLength&#x3D;10</span><br><span class="line">	&#x2F;&#x2F; +kubebuilder:validation:MinLength&#x3D;1</span><br><span class="line">	Foo string &#96;json:&quot;foo,omitempty&quot;&#96;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此处只有一个参数<code>Foo</code>，我们通过注解的方式设定Foo的取值范围为[1,10]</p>
+<h3 id="安装CRD到k8s集群中"><a href="#安装CRD到k8s集群中" class="headerlink" title="安装CRD到k8s集群中"></a>安装CRD到k8s集群中</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">make install </span><br></pre></td></tr></table></figure>
+<p>将<code>Guestbook</code>这种资源类型注册到自己的k8s中以使外部系统能够访问到<br>部署一个<code>Guestbook</code>实例</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">kubectl apply -f config&#x2F;samples&#x2F;</span><br></pre></td></tr></table></figure>
+<p>这一步，以后端视角，就是调用<code>POST</code>接口新建一条”数据库”记录的，当然，k8s的数据库自然就是etcd了；如果我们将<code>foo</code>的值设为<code>asdfgasdfg1</code>，长度为11的字符串，再运行以上命令，会是什么结果呢？</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">The Guestbook &quot;guestbook-sample&quot; is invalid: spec.foo: Invalid value: &quot;&quot;: spec.foo in body should be at most 10 chars long</span><br></pre></td></tr></table></figure>
+<p>可以看到入参校验生效了,</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>至此，我们完成了一个CRD的最基本定义，以后端开发的视角而言，如果将CRD可以看作是一张表，这张表作为资源，这一节完成了对CRD这类资源的基本定义跟校验。</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/">https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/</a></li>
+<li><a href="https://mp.weixin.qq.com/s/jZLkS4SFVVXS1Mx2aG4PUA">Kubernetes API 与 Operator：不为人知的开发者战争（一）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/ODaOiwXMBhRFZjbdu1BFUA">Kubernetes API 与 Operator：不为人知的开发者战争（二）</a></li>
+<li><a href="https://book.kubebuilder.io/">kubebuilder</a></li>
+<li><a href="https://github.com/wusphinx/example-crd">https://github.com/wusphinx/example-crd</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>k8s</category>
+      </categories>
+      <tags>
+        <tag>k8s</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>我与EP的缘份</title>
+    <url>/2020/11/17/%E6%88%91%E4%B8%8EEP%E7%9A%84%E7%BC%98%E4%BB%BD/</url>
+    <content><![CDATA[<p>EP亦即<strong>Engine Productivity</strong>的英文缩写，很多公司其称之为<strong>研发效能</strong>，我有幸在两家公司的效能小组效力过，以致于我在工作中会有一些习惯，比如自己搭建的k8s集群叫<code>ep</code>，测试环境容器化部署的环境变量也叫<code>ep</code>……，坦白讲，对这个职能背后的工作内容确实是有一些新鲜感，我的内心对<code>EP</code>更多的是敬畏之心。</p>
+<p>记得去年初，因为厌倦了业务后端的开发工作，同时也有互联网从业人员的焦虑之心，更深一层，是因为在后端呆了四年，固然有运气的原因，不过还没有混到管理岗位这件事，让我对自身的能力产生了不自信，所以阴差阳错的，从成都来到杭州，进到了C公司质量部门的效能小组，title是资深测试开发工程师，所以其实这个效能是为测试服务的，不过真正做的事情，那就仁者见仁，智者见智了。</p>
+<p>我接到的第一个任务做一个移动端APP自动化测试平台。我经过调研，了解到了Appium、Macaca、NoSmoke、Airtest、Fastmonkey等框架和工具，几乎把移动端的测试工具玩了个遍，甚至自己去写页面的深度遍历，写技术方案，最后我得出了一个结论：所谓的自动化并不能真正提高效率，而只是将大家手机测试任务归类、统一，或者说最后其实需要的是一个手机无接触测试管理平台。后续因为手机端日志平台以及其它原因，此事就此搁置了，于是，我又被分派去和另一个小伙伴做测试环境的容器化推进了。也就是在做这件事的过程中，我接触到了k8s，以为自己也有机会去推进DevOps文化，结果处处碰壁。首先遇到的是k8s的安装方案，要不要自己开发k8s的PaaS平台，当时我根据个人的经验判断是不需要，原因是人力不足以及有开源的Rancher可以用，不过另外一个同事已经投入了不少精力在PaaS平台上，所以我转而去推动容器化的设计和落地上了。当然，遇到的问题是，容器化并不算是真正的需求，只是测试团队一厢情愿想的想法，当时运维团队也在做容器化，差别就在于他们不碰业务，而我们要自己去做业务，部署到k8s中，调通，然后测试，这些都是琐碎的体力活，整个过程就不太顺利，因为容器化需要各方协作，但是容器化的整体意愿不是很强烈，加上部门墙的原因，进度是比较慢的；后来又遭遇部门领导离开，新来的领导并不看好测试部门来做容器化，明面上不反对，但也支持继续下去；在此情况下，有一同事离职，我需要兼顾她留下来的工作：安全平台，经过一番了解，这套平台是基于sonarqube来做的，参与的人还挺多，不过，从设计上看，是自己做了一套平台，底下还是sonarqube，换了一层皮，做了一些翻译和统计以及计分系统，以我做开发的感觉，使用上反而更复杂，当时就觉得这个平台是比较功利的，并没有解决啥问题，不过，因为参与人数众多，也不得不硬着头皮往下做。因为这些工作内容上的变化，感觉到自己做的事情没有太大意义，虽然测试部门做一个平台是一个亮点，但于我而言，对工作本身并没有认同感、自豪感，这份工作无法激起我的热情，于是心生去意，带着对容器化的热情，对自己这次转型的不满，毅然裸辞了。现在回过头来看，并非完全没有收获，接触到了那么多不同的领域，不一样的技术，也做了不少尝试，质量部门的效能理应优先对测试负责，虽然在我看来，格局略小。</p>
+<p>今年8月，入职了W公司的技术保障中心的<strong>EP</strong>效能组，同样地，怀着一颗赤诚之心，我想大干一场。接到的活也是做一个平台：监控报警平台，公司内部本身有一套基于Zabbix的监控报警平台，是用Java写的，不过因为部门同时也在做容器化落地的事情，希望监控能用Prometheus来替代，所以其实是重写原有的监控报警平台，当时以为没有历史负担真好，因为需求已经定下来，于我而言，做实现就好了。于是乎，对Prometheus的生态做了一番调研，在测试环境自己使用，出服务设计方案，搭建环境等。当我深入其中，心头疑惑却越来越重，我要做的平台其实是一个运维主机监控平台（一期），从这个角度上来讲，没有这个平台，也可以完成目标，那做这一套的意义在哪呢？带着这个疑问，我去找了一些人，得到的回复是：主机监控最终是想开放给开发者用（因为当时还没有容器化，服务还是部署在主机中，主机与服务的关系是多对多），当然，我还了解到我所以在的部门，以前是运维部门，因为少有运维具备开发能力，于是招了一些开发，最终合并成了技术保障中心这个大部门。<br>于是，我明白了，效能并不是真的效能，说起来，只是运维的开发，怪不得领导经常打趣说运维是我们的<em>甲方</em>。所以才会有Nginx配置平台以及我做的监控报警平台，这些平台说是给运维做的GUI平台，可能有点夸张，但从效果上看，确实如此。在做这套平台的过程中，我花了一些时间研究GitOps和优化公司持续集成的方法，不过可惜的是，这些都还没有来的及实施，我就“离职”了。离职发生在我做入职答辩的那天，毫无征兆地，HR说我的答辩没有通过，由于公司没有多余的HC，限为本周五离职，当时我就惊呆了，甚至于觉得非常耻辱，我还是第一次遇到这种状况。我们老大找到我说，他之前也不知道，是因为公司打算上市，在做一些优化，也可能是安慰的话。我没有过多纠缠，也没有做申辩，只是觉得既然此处不欢迎我，那也没有呆下去的必要的，也不必再争取什么，果然在OA上提了离职。</p>
+<p><img src="/images/ep.jpeg" alt="ep"><br>这两次呆在EP团队的经历，称不上有多愉快，甚至于对自身产生了一些怀疑，因为这些，换工作突然变得频繁，但我本身并没有那么不安份。回想起来，我只是想<strong>做正确的事</strong>，但没有<strong>正确的做事</strong>，这两者，也并非绝对对立，对于EP，我的敬畏之心仍在，甚至更甚从前，是它让我了解到，工作不能只限于眼前，同能不能好高骛远，找到真正有价值的情况，优先解决主要矛盾，获取信任，努力解决别人的问题，就能不断拓展自己的业务边界。</p>
+<p>如果时间倒流，在C公司，我会花更多时间去了解各方真正的痛点，与上下达到目标的一致性，而不只是埋头做事；在W公司，我会争取平台最小化实现，推而广之，让真正的使用群众投票，再不生无效的疑问，抱无畏的希望。但是，没有如果，即使那么做了，也只是在做一份工作，并没有真正的<strong>EP</strong>。工作中的价值跟意义，或许，并没有那么重要吧，但是，心中还是会保留着一丝希望，这，是不是就是那份初心？</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://sq.163yun.com/blog/article/224315717234970624">https://sq.163yun.com/blog/article/224315717234970624</a></li>
+<li><a href="https://landing.google.com/engprod/">https://landing.google.com/engprod/</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+        <tag>EP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>我是如何设计监控平台的</title>
+    <url>/2020/11/11/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E7%9B%91%E6%8E%A7%E5%B9%B3%E5%8F%B0%E7%9A%84/</url>
+    <content><![CDATA[<p>老实说，刚接到监控平台这项工作内容的时候，只是过了一下产品的设计，产品的设计大部分借鉴的腾讯某监控平台，然后说是要做一套监控平台，以替代现有的Zabbix监控平台，那其实公司的现状是，公司有自己的机房，生产业务大部分都部署在物理机/虚拟机，现在向容器化迈进（听说做了两年），也有接入腾讯云、华为云等云厂商，目前监控用的是Zabbix, 因为在推容器化，k8s平台的监控首选Prometheus了，正因如此，所以要将再有的监控（只是主机监控）全面转向Prometheus，这个理由，不可谓不充分。</p>
+<p>事情已经摆在眼前了，就是要基于Prometheus做一套监控平台，平台的作用是让监控可配置，在公司推广，让其它人能用起来。于是乎，开始折腾起Prometheus起来了，先来认识一下：</p>
+<blockquote>
+<p>Prometheus受启发于Google的Brogmon监控系统（相似的Kubernetes是从Google的Brog系统演变而来），从2012年开始由前Google工程师在Soundcloud以开源软件的形式进行研发，并且于2015年早期对外发布早期版本。2016年5月继Kubernetes之后成为第二个正式加入CNCF基金会的项目，同年6月正式发布1.0版本。2017年底发布了基于全新存储层的2.0版本，能更好地与容器平台、云平台配合。</p>
+</blockquote>
+<p>先盗一张官网的架构图</p>
+<p><img src="/images/prometheus.png" alt="prometheus"></p>
+<p>监控报警就是Prometheus Server</p>
+<ol>
+<li>收集目标exporter的数据</li>
+<li>判断阈值</li>
+<li>触发报警</li>
+<li>Alertmanager推送消息</li>
+</ol>
+<p>整体构架还是清晰明了的，从产品的核心需求来看，平台提供的能力要满足以下几点：</p>
+<ol>
+<li>自定义监控规则</li>
+<li>自定义报警规则</li>
+<li>自定义报警通知</li>
+<li>自定义报警频率</li>
+</ol>
+<p>由于产品目标用户的特殊性，服务部署在物理机/虚拟机/云主机上，单台主机会存在部署多个服务的情况，本质上是在做主机监控，但是要开放给业务开发使用，也就是业务要跟主机监控绑定。好了，拿到需求，要马上做吗？老司机都不急于动手，先想清楚一些问题：</p>
+<ol>
+<li>业务开发是否真实关心主机状况，例如cpu过载/内存过载等问题？</li>
+<li>主机监控及报警配置是否在存在大量差异化需求，如：a机器cpu利用率超过80%报警，b机器cpu利用率超过60报警？</li>
+<li>主机与服务是多对多的关系，这就会存在监控告的是别人的警，跟自己没关系的情况？<br><img src="http://processon.com/chart_image/5fab81cd7d9c0865e9bc0dba.png" alt="node2app"></li>
+</ol>
+<p>经过了解，问题1并非由开发提出，但你要说不存在这样的需求也的确欠妥，毕竟目前主机监控是由运维在负责，现在运维希望将主机监控将由开发去负责；问题2，本来差异是比较小的，不过由于需求1的存在，的确存在这种可能；问题3，基本无解，由于问题1的存在，3也不算问题。</p>
+<p>无论如何，还是要实际使用一下Prometheus的，好在容器做强部署还是非常方便快捷的，不过又发现一些问题？</p>
+<ol>
+<li>prometheus规则配置目前只直接配置文件的形式，这对于业务平台来说并不太友好，如果支持关系型数据库也好呀</li>
+<li>主机与服务间的关系由内部第三方服务管理，主机目标配置目前还是以文件存ip的形式，这对于报警查询及配置来说，都不友好</li>
+<li>主机监控要考虑到不同环境，不同机房的统一管理，Prometheus该如何使用？</li>
+</ol>
+<p>针对以上问题，在一番斟酌后，我拿出了自己的设计：</p>
+<p><img src="/images/alert_design.png" alt="监控设计"></p>
+<p>红框部分即是需要参与编码服务或模块。</p>
+<ol>
+<li>alert-service: 跟前端交互的服务</li>
+<li>alert-engine: RESTful API服务</li>
+<li>alert-webhook: 用于接收alertmanager的webhook</li>
+<li>minio: 用于报警规则配置</li>
+<li>consul: Prometheus的服务发现</li>
+</ol>
+<p>首先，Prometheus需要联邦部署，这是一个树形结构，所有子Prometheus数据都上送到根Prometheus，这样，外部只需要与根Prometheus打交道即可，这解决了不同Prometheus集群统一管理的问题；</p>
+<p>引入consul是为了解决Prometheus的服务发现问题，所谓服务发现是为了让Prometheus发现自己需要从哪些目标抓数据，同时也可以很方便地给目标打上自己想要的标签，如机房，应用名等信息，如果不用consul，也可以使用文件配置，使用文件配置的问题在于需要人为处理，不容易与外部系统对接，不够灵活。</p>
+<p>引入minio是为了解决规则配置的问题，再有规则配置使用文件配置，也需要人手工操作，如果不使用minio这类文件系统，就需要ssh远程登录到配置所在主机，然后修改规则配置，不过在程序中使用ssh并不友好（也考虑过用git来管理规则配置，由于时间关系，这个方案并没有施行)</p>
+<p>alert那三个服务本可以合三为一的，为什么要拆成三个呢？<br>alert-webhook只是接收alertmanager报警然后将期扔到kafka中，如果只有一个服务的话，那么在需求迭代服务重启时，就可能会丢掉报警。<br>alert-engine单纯提供RESTful API服务，比较稳定，这样的好处是上层如何变，下层不用有较大改变或者只需要关注自身业务即可，如此，如些，告警的接收、发送、配置也就彻底解耦了。</p>
+<p>至于表的设计，由于依托于Prometheus，可以参照报警规则的结构体来建表，通知渠道根据自己的需求进行一些设计，最终需要与Prometheus保持一致，保证报警消息最终能发给目标用户。</p>
+<p>这套系统对于业务方而言，可能作用不大，因为主机报警这类信息对于业务方开发而言，他们即使收到消息，并不能解决问题，如果能有阈值触发时，保存现场，比如火焰图，对开发者而言应该是有帮助的。</p>
+<p>主机监控跟应用监控还是有很大区别的，目标用户在根本上是不一样的，当然，这两者也有结合的可能，比如日志聚合系统<a href="https://grafana.com/oss/loki/">Loki</a>，师承Prometheus，如果跟运维监控相结合，有很大的想像空间，比如，可以统一监控的入口，信息聚合等。</p>
+<p>监控报警的意义最终是要能解决问题，从这个角度讲，我的这个设计目前只能暴露问题，解决问题需要接外部系统，比如，自动扩缩容、服务降级、问题跟踪等，最终能形成闭环，让问题能够真正得到处理以及最终解决，还有不少事情需要做。</p>
+]]></content>
+      <categories>
+        <category>后端</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>我的2020</title>
+    <url>/2021/01/03/%E6%88%91%E7%9A%842020/</url>
+    <content><![CDATA[<p>2020年底喜迎女儿的诞生，这是这一年最大的惊喜也是最开心的事情了，一直到今天才有时间有心情来回顾一下自己的2020年之旅，过去几年的年终总结过于平铺直述，有点像是记流水账，今天想随性一点，说说自己的内心感受和一些比较有记忆点的事情。</p>
+<p>2020年初记忆点最深的当然就是疫情，疫情期间都呆在宁波姐姐家中，最大的疏忽没有带上自己的MBP，以至于年初远程在家办公有点手足无措，只能借用一台Windows笔记本，真的是难用，还好在这期间工作内容不多，只是调研了一下大数据在容器化中的应用，写了一篇文章而已，调研也是用的阿里云的ECS。整体而言，在家办公感觉工作时间反而变长了，因为在家总会被各种各样的事情打断，需要不停地切换上下文，但是对于软件开发从业者，确实也没有一定需要到办公室工作的必要，远程工作只要把控得当，也未偿不可。我相信以后这一定是一种趋势，一定会成为这一行业的常态工作形式，正如10年前我相信Chrome浏览器一定会战胜IE、支付宝肯定会普及一样，就是那种讲不出理由的相信。</p>
+<p>讲不出理由的相信，有时候也是刚愎自用，这导致了我在8月份离开了网银互联。当时团队做PaaS平台看不到赢利希望，公司核心管理层决定试水SaaS服务，当时我怎么也不相信这一策略会成功，要知道，我们只是一个11人小团队，这11人还包括2个产品、1个测试、2个前端，做SaaS能力不够，人力不够，资源也不够，怎么看都不像是会成功的样子……现在想来，做事情不就是要把不可能变可能吗？若是事情足够简单，那公司招我又何用？况且在网银这样，我可以边学习边工作，还有一个老大愿意手把手教我，而我却在团队最困难的时候选择了离开，这是逃避，这是我讨厌的那种人。这一次我学会了相信，相信的力量，相信你做的事情，相信你做的事情会成功。单就信念感这一点来说，自己还差很多。此处必须要引用<br>hi_heige的一句微博：</p>
+<blockquote>
+<p>让自己可以用的那是Demo，让技术人员会用的那是工具，让傻子都会用那才是产品！</p>
+</blockquote>
+<p>有时候，你有自认为充足的理由不相信，这导致了我的第二次“离职”。在微医的三个月，我一直在做一件我并不相信的事情，我有自己的理由，但是这个理由并没有说服我的上司，最后项目是做成了，落地了，但从推广结果看不尽如人意，事实上我也并没有支做所谓的推广，因为自己从一开始就不相信这件事能够产生领导预想中的效果和意义，不过最后最后的结果的确得由我来承担，虽然我几乎是一个光杆司令，但却被赋予的项目负责人的角色，职场就是这样，不会有太多试错机会，特别是像我这样工作多年，理应具备更多能力的“专家”。微医这个Offer得来很容易，当然离职也是最快的。我常对自己说，工作中，要么跟对人，要么做对事，两个我都想要，最后我发现，得其一都很难，更实际一点，我可以成为那个”对“的人，正如强哥当年那样，然后找到对的事，给自己的团队，2021年，在成为对的人上，我应该也愿意花更多工夫：不怕事，能抗事，会来事！</p>
+<p>技术上，却有些迷茫了。19年打算转测开，结果发现完全不是想的那回事，没转成功，又跑去做容器开发，也是浅尝辄止，再后来又做监控，更是蜻蜓点水，本意是希望拓宽自己的职业宽度，却发现路越走越窄了，流于形式，浮于表面，整个人也特别浮躁，以至于找工作不顺利，自信也受到打击。痛定思痛，天无绝人之路，以往欠下的技术债务，迟早要还上的，那颗敬畏之心，也更甚了。年底给kratos提的PR终于被合入主干了，也算是对2020年有个交代，提醒自己并没有那么一事无成，默默无闻。2021年，熟悉某开源项目，最好能成为核心Committer。</p>
+<p>生活上，2020年更加魔幻：5月份知道老婆怀孕后，年中顺利卖了成都的房子，又在杭州安家落户，为了小宝宝，买了人生中第一辆车，然后年底宝宝出生，也就一年时间，实现了买房买车生小孩，成为一名更符合年龄、符合儿子、丈夫、弟弟这个角色，有开心，但不是自己想成为的那个样子，同样是没有理由，对未来，也没有一个像之前的一个面试官那样有一个非常明确的规划，只是一心要拓展自己的职业边界，提高技术内功。 </p>
+<p>2021年的关键字：<strong>聚焦</strong>、<strong>坚持</strong>、<strong>信念</strong></p>
+<p>有点期待2021年底提笔年终总结时，会活成一个更好的自己，为自己加油！</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>谈谈容器化的实践思路</title>
+    <url>/2020/11/17/%E8%B0%88%E8%B0%88%E5%AE%B9%E5%99%A8%E5%8C%96%E7%9A%84%E5%AE%9E%E8%B7%B5%E6%80%9D%E8%B7%AF/</url>
+    <content><![CDATA[<p>老实说，这是一个挺大的话题，盲目谈论有点大言不惭，不过，笔记打算从自己的工作经历中聊聊这个话题。</p>
+<p>彼时，笔者还在成都，那时Golang还很新，版本还牌1.10以下，容器化在当时的技术领域是一项非常时髦的技术，当时我所在的团队，已经开始尝试服务容器化了，容器的管理平台使用的时开源的容器管理平台<a href="https://docs.rancher.cn/">Rancher</a> 1.x版本（当时还没有使用k8s，不过运维团队已开始预研），当时团队自动化程度较高，<code>Dockerfile</code>也不是开发自己写的，而是由<strong>项目初始化工具</strong>生成Dockerfile及<code>.gitlab-ci.yml</code>模板，然后经由CI/CD平台（用的是gitlab runner）编辑打包然后部署，整个流程如下所示：</p>
+<p><img src="/images/g7cicd.png" alt="g7"></p>
+<p>当时测试环境有<code>test</code>、<code>demo</code>等，都是相互隔离的，以提交时的分支名确定应该部署到哪个环境，比如当时时<code>test</code>分支，提交代码之后，应用就部署到<code>test</code>环境。这一套流程最大的好处是从提交代码开始，CI/CD就开始进行，且中间没有阻隔，所以开发测试的效率非常高，迭代很迅速，这段工作经历是我的DevOps思想的启蒙。</p>
+<p>来到杭州以后，第一份工作是在某操做容器化的推进，公司的技术栈以Java为主，推进容器化的动机是因为测试环境非常混乱，希望能够通过服务容器化，减少测试环境的机器，以达到节省成本的目的。（值得一提的是，当时还没有谈到推进容器化上生产这一步，对此我表示很惊讶）。当时测试环境的混乱情况到了何种地步，且我娓娓道来：</p>
+<p><img src="/images/caocaocicd.png" alt="caocaocicd"></p>
+<p>其中选择空闲机器这一步，因为机器不足分布不均的有关系，会出现张三将机器上某个应用A杀掉从而部署应用B；触发jenkins任务这一步经常会失败，因为这一步通常是由测试人员去完成的，编译打包过程出现一些问题也在所难免，最后又得找到开发；再说部署这一步，因为应用部署前需要将自己注册到网关，这一步因为某些原因经常出现异常，从而导致部署中断，此时测试人员又得找到运维……我描述的还只是当时所见到的一小部分，这种混乱主要原因在于开发、运维、测试的割裂，各自完成自己所做的那一部署然后就不管了，由于常见的部门墙等因素，跨部门合作也不算很容易，所以经常可见的项目延期上线，以我的角度，DevOps几近于没有，因为我没有看到合作，团队和部门都是各自为政，当然，这也并非个案。<br>在这种情况下要推进容器化并非易事（话又说回来，要是容易的话，也就没我什么事了）。出于个人经验，你首先想到的是改造CI/CD，将我在前司的研发流程带到公司。于是，从DevOps的受益者变成设计者，我首先完成了一套基于gitlab的CI/CD流程的demo，在团队内做了一次分享，不过可惜的是，当时团队成员觉得思路挺好，就是和现有以Jenkins为主的流程有些差异，不容易为人所接受。现有想想，当时也确实过于激进，毕竟我所接触到的同事，他们也只用过Jenkins，而且由于职能的原因，每个人相对只关心于自己的任务线。虽说有点受挫，不过笔者当时并没有放弃，而是找gitlab的维护人员，希望他们能够安装gitlab runner，不过得到的回复是：我们现在已经有了jenkins，没有必要也不能安装gitlab runner了……</p>
+<p><img src="/images/caocaocicd-paas.png" alt="caocaocicd-paas"></p>
+<p>没法，容器化总也要推进，根据当时的服务容器化的需求，当然，是直接上k8s的，我们首先做的一件事情是进行硬件资源评估，然后申请机器部署k8s集群，然后着手公司服务拓扑图，没想到在这一步遇到了难题，由于业务线各自为政，没有一个全局的服务依赖关系，无奈之下，经过商议，为了证明容器化的可用性，只好先将某一个业务线的服务部署到我们的k8s集群中，由于业务不熟悉，期间也花了不少时间在打包以及调试上。<br>其中渲染资源文件模板本来是可以用helm的chart包来替代的，不过自己写<code>deployment</code>、<code>service</code>、<code>ingress</code>模板其实也可以达到目的，只不过因为要部署到k8s的关系，需要另做一套平台来部署，其实并没做DevOps，只是硬生生的将原有的那一套流程搬到容器化中而已，所以，即使我离职已经一年有余，这一套流程听说也没有最终落地，实在令人唏嘘。</p>
+<p>前司某医的容器化之路也是坎坷，项目起步于2018年，容器化的动机据不完全了解是为了让公司跟上技术的发展潮流。公司技术栈同样以Java为主，不过还有少数php、golang以及python应用（当然，我用golang写的监控服务必须是容器化的）。整个流程如下所示</p>
+<p><img src="/images/weiyicicd.png" alt="weiyicicd"></p>
+<p>所谓个性化部署参数这里要特别解释一下：就是写一个<a href="https://kubernetes.io/zh/docs/concepts/extend-kubernetes/api-extension/custom-resources/">CRD</a>，这个CRD定义了一些参数如：appname、requests、limits、port等，简单说就是将deployment的参数以CRD的形式暴露出来，最后形成所下所示的k8s资源：</p>
+<figure class="highlight yml"><table><tr><td class="code"><pre><span class="line"><span class="attr">kind:</span> <span class="string">Deployment</span></span><br><span class="line"><span class="attr">apiVersion:</span> <span class="string">extensions/v1beta1</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">myapp</span></span><br><span class="line">  <span class="attr">labels:</span></span><br><span class="line">    <span class="attr">appname:</span> <span class="string">myapp</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line"> <span class="attr">replicas:</span> <span class="number">1</span></span><br><span class="line"> <span class="attr">template:</span></span><br><span class="line">   <span class="attr">spec:</span></span><br><span class="line">     <span class="attr">containers:</span></span><br><span class="line">       <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">myapp</span></span><br><span class="line">         <span class="attr">image:</span> <span class="string">myapp:5.0.3</span></span><br><span class="line">         <span class="attr">ports:</span></span><br><span class="line">         <span class="bullet">-</span> <span class="attr">containerPort:</span> <span class="number">80</span></span><br><span class="line">         <span class="attr">resources:</span></span><br><span class="line">           <span class="attr">limits:</span></span><br><span class="line">             <span class="attr">memory:</span> <span class="string">600Mi</span></span><br><span class="line">             <span class="attr">cpu:</span> <span class="number">1</span></span><br><span class="line">           <span class="attr">requests:</span></span><br><span class="line">             <span class="attr">memory:</span> <span class="string">300Mi</span></span><br><span class="line">             <span class="attr">cpu:</span> <span class="string">500m</span></span><br><span class="line"><span class="string">……</span></span><br></pre></td></tr></table></figure>
+<p>如果定义一个服务也有三类资源如：<code>deployment</code>、<code>service</code>、<code>ingress</code>，那么这个CRD的作用就在于依据入参生成这三类资源并且部署到k8s集群中，由controller来保证每个应用，这三种资源都保持与CRD的定义一致。这也是容器化的一种思路，也是典型的CRD应用。<br>坦白说，就算不写CRD，也能达到这个目的，写CRD的目的是为了将应用模型进行统一，形式上就是尽可以将通用的资源参数暴露出来以供个性化使用，无奈之处在于还是在走容器化适配应用的路数，还不是将应用进行容器化适配，比如，dubbo的服务发现由zk提供，不过zk目前是在k8s外围，从功能上来讲，zk一定程序上跟k8s的service存在重复；应用内存使用是4G起步，虽说是为了保险起见，不过，这说明服务本身过重了，当然，硬件资源充足的情况下，这也不算是很大的问题；dubbo有自己的负载均衡，jvm可能也能限制资源的使用，作为容器化的拥趸，我不禁对java容器化的意义产生了一丝怀疑，诚然，k8s可以做hpa，可以自动重启，这些都是优势，但是到底真正的收益在哪里呢？<br>（截止文章发布之日，前司的容器化之路依然还在进行中）</p>
+<p>容器化固然只是一句口号而已，而这句口号，却常常伴随着DevOps这个词语，依我个人的浅见，DevOps是一种开放合作的文化，它打破了软件开发过程中的各个职能界限，最终是为了提高工作效率，从提高工作效率这个角度来看，DevOps在我的职业生涯中依旧少见。</p>
+<p>毫不掩饰的说，我对Jenkins有一丝偏见，因为我从事的公司中，使用Jenkins的方式无一例外，都是反DevOps的，设置流程的障碍，需要多方介入，但这种使用形成了一种习惯，我并不反对Jenkins，但如果使用Jenkins让事情变得更容易，我自然欣然接受，比如使用gitlab的CI/CD，就让人觉得很舒服，扩展性也挺好，这也是一个习惯问题。</p>
+<p>前司的容器化之路依旧在进行中，而我，也有自己对于容器化的想法，如下所示</p>
+<p><img src="/images/dreamcicd.png" alt="dreamcicd"></p>
+<p>以轻巧的<a href="https://k3s.io/">k3s</a>作为CI平台，可以将gitlab runner接入进来，当然，每个应用有自己对于CI的需求，对于资源的需求，所以项目repo中也应该包含<code>.gitlab-ci.yml</code>、<code>Dockerfile</code>等，选择k3s来做CI的运行平台自然是为了利用k8s的资源调度和扩展性了；选择gitops是为了将CI/CD解耦，这样，就有DevOps内味了。</p>
+<p>自己的一点浅见，欢迎各位拍砖！</p>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>容器化</tag>
+        <tag>DevOps</tag>
+        <tag>k8s</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>金丝雀发布</title>
+    <url>/2019/10/09/%E9%87%91%E4%B8%9D%E9%9B%80%E5%8F%91%E5%B8%83/</url>
+    <content><![CDATA[<p>什么是金丝雀发布？</p>
+<blockquote>
+<p>相传上个世纪煤矿工人在作业时，为了避免瓦斯中毒会随身带一只金丝雀下到矿洞，由于金丝雀对二氧化碳非常敏感，所以看到金丝雀昏厥的时候矿工们就知道该逃生了。</p>
+</blockquote>
+<p>金丝雀发布带来的好处是显而易见的，从上线的角度讲，每一次上线发布都是有风险的，如何最小化风险，当然不是不上线，逐步验证，直到确认无误再逐步全量更新，这就是金丝雀发布的意义，我们来看一个简单的demo</p>
+<p>源码以<code>message</code>内容作为区分，<code>pong-v1</code>对应<code>w1</code>版本， <code>pong-v2</code>对应<code>w2</code>版本</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import &quot;github.com&#x2F;gin-gonic&#x2F;gin&quot;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">    r :&#x3D; gin.Default()</span><br><span class="line">    r.GET(&quot;&#x2F;ping&quot;, func(c *gin.Context) &#123;</span><br><span class="line">        c.JSON(200, gin.H&#123;</span><br><span class="line">            &quot;message&quot;: &quot;pong-v1”,&#x2F;&#x2F;pong-v2</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;)</span><br><span class="line">    r.Run(&quot;:8000&quot;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Dockerfile</code>如下所示</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">FROM golang as builder</span><br><span class="line"></span><br><span class="line">ENV GO111MODULE&#x3D;on</span><br><span class="line"></span><br><span class="line">WORKDIR &#x2F;app</span><br><span class="line"></span><br><span class="line">COPY go.mod .</span><br><span class="line">COPY go.sum .</span><br><span class="line"></span><br><span class="line">RUN export GOPROXY&#x3D;https:&#x2F;&#x2F;mirrors.aliyun.com&#x2F;goproxy&#x2F; &amp;&amp; go mod download</span><br><span class="line"></span><br><span class="line">COPY . .</span><br><span class="line"></span><br><span class="line"># 因为是在树莓派上运行，所以需要将GOARCH设置成arm</span><br><span class="line">RUN CGO_ENABLED&#x3D;0 GOOS&#x3D;linux GOARCH&#x3D;arm go build -o httpserver</span><br><span class="line"></span><br><span class="line">FROM scratch</span><br><span class="line">COPY --from&#x3D;builder &#x2F;app&#x2F;httpserver &#x2F;app&#x2F;</span><br><span class="line">EXPOSE 8000</span><br><span class="line">ENTRYPOINT [&quot;&#x2F;app&#x2F;httpserver&quot;]</span><br></pre></td></tr></table></figure>
+<p>启动两个版本的容器</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">docker -D run -p 127.0.0.3:8002:8000 w2</span><br><span class="line">docker -D run -p 127.0.0.2:8001:8000 w1</span><br></pre></td></tr></table></figure>
+<p>在nginx配置文件中增加以下内容</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">upstream backend &#123;</span><br><span class="line">    server 127.0.0.2:8001 weight&#x3D;10;</span><br><span class="line">    server 127.0.0.3:8002 weight&#x3D;5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">server &#123;</span><br><span class="line">    listen       8080;</span><br><span class="line">    location &#x2F;ping &#123;</span><br><span class="line">    proxy_pass http:&#x2F;&#x2F;backend;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接口调用</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v2&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v1&quot;&#125;%                                                                               </span><br><span class="line">➜  ~ curl http:&#x2F;&#x2F;10.200.182.14:8080&#x2F;ping</span><br><span class="line">&#123;&quot;message&quot;:&quot;pong-v2&quot;&#125;%</span><br></pre></td></tr></table></figure>
+<p>可以明显看到 <code>pong-v1</code>与<code>pong-v2</code>的数量对比为2:1, 正好与nginx中的配置的权重相等，这里如果把<code>w2</code>比作待上线版本，<code>w1</code>看作当前生产版本，如若<code>w2</code>有问题，只会影响1/3的接口流量，这就做到了降低风险的目的。这里使用的是加权的轮询算法（<code>ptr++ mod nodeNum</code>）</p>
+<p>弊端：按序集中，整体流量不够分散<br>需要一个相对分散，看起来更平滑的轮询算法</p>
+<p>当然，这只是一个简单的Demo，具体到生产环境还要考虑其它问题，比如以用户ID作为流量切分的依据、新版本服务无感知加入生产服务列表、快速回滚预案、数据修复预案等等。</p>
+<p>参考:</p>
+<ul>
+<li><a href="http://blog.lfyzjck.com/14807508681806.html">http://blog.lfyzjck.com/14807508681806.html</a></li>
+<li><a href="https://tenfy.cn/2018/11/12/smooth-weighted-round-robin/">https://tenfy.cn/2018/11/12/smooth-weighted-round-robin/</a></li>
+<li><a href="https://colobu.com/2016/12/04/smooth-weighted-round-robin-algorithm/">https://colobu.com/2016/12/04/smooth-weighted-round-robin-algorithm/</a></li>
+</ul>
+]]></content>
+      <categories>
+        <category>DevOps</category>
+      </categories>
+      <tags>
+        <tag>DevOps</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>关于服务网格</title>
+    <url>/2019/11/18/%E5%85%B3%E4%BA%8E%E6%9C%8D%E5%8A%A1%E7%BD%91%E6%A0%BC/</url>
+    <content><![CDATA[<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>如果您是一名软件工程师，工作在任何接近后端系统的地方，那么“服务网格”这个术语可能在过去几年的某个时候已经渗透到您的意识中了。多亏了一系列奇怪的事件，这句术语就像滚雪球一样越滚越大，在营销和宣传中不断地出现，而且没有任何迹象表明它会很快停止。</p>
+<p>服务网格诞生于云原生生态-它浑浊且暗流涌动，这意味着大量的服务网格内容，从“毫无营养”到用一个技术术语来说就是：“基本上是扯淡”。但是，如果您能够排除所有的干扰，服务网格就具有一些实际的、具体的和重要的价值。</p>
+<p>在本指南中，我将尝试提供一个诚实、深入、以工程师为中心的服务网格指南。我要讲的不仅是“是什么”，还有“为什么”和“为什么是现在”。最后，我将尝试描述为什么我认为这种特殊的技术吸引了如此疯狂的炒作，这本身就是一个有趣的故事。</p>
+<h2 id="我是谁"><a href="#我是谁" class="headerlink" title="我是谁"></a>我是谁</h2><p>嗨。我是<a href="https://twitter.com/wm">威廉·摩根</a>。我是<a href="https://linkerd.io/">Linkerd</a>的创造者之一，Linkerd是第一个服务网格项目，这个项目产生了服务网格这个术语。(对不起!)我也是<a href="https://buoyant.io/">Buoyant</a>公司的CEO，这家公司开发出了像<a href="https://linkerd.io/">Linkerd</a>和<a href="https://dive.co/">Dive</a>这样很酷的服务网格项目。</p>
+<p>可以想象，因利益相关，我是非常有偏见的，在这个问题上有一些强烈的意见。也就是说，我将尽我最大的努力把篇幅控制在最低限度(除了一个部分，“为什么人们对这件事谈论得这么多?”我将尽我最大的努力以一种尽可能客观的方式来写这篇指南。当我需要具体的例子时，我将主要依赖于Linkerd，但当我知道与其他网格实现的不同之处时，我将把它们指出来。</p>
+<p>好的。时时候来点干货了!</p>
+<h2 id="什么是服务网格"><a href="#什么是服务网格" class="headerlink" title="什么是服务网格"></a>什么是服务网格</h2><p>服务网格在架构上非常简单。它只不过是一堆用户空间代理，被“粘在”你的服务上(我们稍后会讨论“下一步”是什么意思)，加上一组管理流程。代理被称为服务网格的数据平面，管理过程被称为服务网格的控制平面。数据平面拦截服务之间的调用并“处理”这些调用;控制平面协调代理的行为，并为您(操作人员)提供一个API来操作和测量整个网格。</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-02dc39e04cf61766.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>这些代理是什么?它们是Layer 7-aware TCP代理（这个不知道怎么翻译，有点奇怪），就像haproxy和NGINX一样。代理的选择多种多样;Linkerd使用一个名为<a href="https://github.com/linkerd/linkerd2-proxy">Linkerd-proxy</a>的代理（使用Rust语言编写），它是我们专门为服务网格创建的。其他网格使用不同的代理;Envoy是一个的选择。但是不同的代理实现细节本身也不相同。</p>
+<p>这些代理用何用途? 显然，它们代理对服务的调用和来自服务的调用。(严格来说，它们同时充当“代理”和“反向代理”的角色，处理入口和出口流量。)它们实现了一个关注服务间调用的特性集。服务之间的流量是服务网格代理与API网关或入口代理的区别所在，后者主要关注外网对整个集群的调用。</p>
+<p>这就是数据平面。控制平面比较简单:它是一系列组件，提供数据平面以协调方式工作所需的任何机制，包括服务发现、TLS证书颁发、度量聚合等等。数据平面调用控制平面来通知其行为;控制平面反过来提供一个API，允许用户修改和检查数据平面的整体行为。</p>
+<p>这是Linkerd的控制平面和数据平面的示意图。您可以看到控制平面有几个不同的组件，包括一个小型的Prometheus实例，该实例聚合来自代理的度量数据，以及诸如<code>destination</code>(服务发现)、<code>identity</code>(颁发证书)和<code>public-api</code>（web和CLI)等组件。相比之下，数据平面只是应用程序实例旁边的一个linkerd-proxy。这只是一个逻辑图;在部署时，您可能会得到每个控制平面组件的三个副本，但会部署数百或数千个数据平面代理。</p>
+<p>(图中的蓝色方框表示Kubernetes pod的边界。您可以看到，linkerd-proxy容器实际上与应用程序容器运行在同一个pod中。这种模式称sidecar容器。)</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/44480-cd9380f7b8b5f014.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>服务网格有两个重要的含义。首先，由于代理特性集是为服务到服务调用而设计的，所以服务网格只有在应用程序构建为服务时才有意义。您可以将它与一个整体一起使用，但是它需要大量的机器来运行单个代理，并且这个特性集不太适合。</p>
+<p>另一个后果是服务网格将需要大量的代理。实际上，Linkerd为每个服务的每个实例添加一个linkerd-proxy。(其他一些网格服务实现为每个节点/主机/虚拟机添加一个代理。两种方式都有很多。)大量使用代理本身有两个含义:</p>
+<ol>
+<li> 不管这些数据平面代理是什么，它们最好够快。您将为每个调用添加两个代理，一个在客户端，一个在服务器端。</li>
+<li> 此外，代理需要小而轻。每一个代理都将消耗内存和CPU，并且这些消耗将随应用程序线性增长。</li>
+<li> 您将需要一个用于部署和更新大量代理的管理系统，你肯定不会想要手动一个一个去做。</li>
+</ol>
+<p>纵观全局，这似乎就是服务网格的全部内容:您部署了大量的用户空间代理来对内部的服务到服务的流量“做一些事情”，并且您使用控制平面来更改它们的行为并查询它们生成的数据。</p>
+<p>现在让我们来谈谈服务网格产生的原因。</p>
+<h2 id="为什么服务网格是有意义的"><a href="#为什么服务网格是有意义的" class="headerlink" title="为什么服务网格是有意义的?"></a>为什么服务网格是有意义的?</h2><p>如果您是第一次接触服务网格的，那么如果您的第一反应是轻微的恐惧，那也是可以理解的。服务网格的设计意味着它不仅会增加应用程序的延迟，还会消耗资源并引入大量的机制。前一分钟你还在安装一个服务网格，下一分钟你就突然要运行成百上千个代理了。为什么有人想这么做?</p>
+<p>答案有两点。首先，由于生态系统中正在发生的一些其他变化，部署这些代理的操作成本可以大大降低。后面会讲到更多。</p>
+<p>更重要的一点是，这种设计实际上是向系统引入额外逻辑的一种好方法。这不仅是因为你可以在那里添加大量的功能，还因为你可以在<strong>不改变生态系统</strong>的情况下添加它们。实际上，整个服务网格模型都是基于这样的认知:在一个多服务系统中，无论单个服务实际做什么，它们之间的通信都是功能的理想插入点。</p>
+<p>例如，Linkerd和大多数网格一样，有一个主要关注HTTP调用的第7层特性集，包括HTTP/2和gRPC。特征集很广，但可以归纳为以下三类:</p>
+<ol>
+<li> 可靠性特征。请求重试、超时、警告(流量切分)等。</li>
+<li> 可观测性特征。对每个服务或单个路由的成功率、延迟和请求量进行聚合、服务拓扑图的绘制等。</li>
+<li> 安全特性。双向TLS认证，访问控制等。</li>
+</ol>
+<p>这些特性中有许多是在请求级别操作的(因此称为“L7代理”)。例如，如果服务Foo对服务Bar进行HTTP调用，那么Foo端上的link-proxy可以根据每个服务Bar的观察延迟，跨所有Bar实例智能调用负载均衡;它可以重试请求，如果它失败了，如果它是<a href="https://developer.mozilla.org/zh-CN/docs/Glossary/%E5%B9%82%E7%AD%89">幂等</a>的;它可以记录响应代码和延时;等等。类似地，如果不允许调用，或者超过了速率限制，Bar一侧的链接代理可以拒绝调用;它可以从它的角度记录延迟等等。</p>
+<p>代理也可以在连接级别“做一些事情”。例如，Foo的linker-proxy可以发起TLS连接，Bar的linker-proxy可以终止连接，双方都可以验证对方的TLS证书。这不仅提供了服务之间的加密，而且还提供了一种加密安全形式的服务身份——Foo和Bar服务可以“证明”他们是他们所说的那个人。</p>
+<p>无论它们是在请求级还是在连接级，需要注意的重要一点是，服务网格的特性本质上都是可操作的。Linkerd中没有任何关于转换请求有效负载语义的内容，例如将字段添加到JSON或转换protobuf。这是我们在讨论<a href="https://zh.wikipedia.org/zh-hans/%E4%BC%81%E4%B8%9A%E6%9C%8D%E5%8A%A1%E6%80%BB%E7%BA%BF">ESBs</a>和中间件时再次提到的一个重要区别。</p>
+<p>这就是服务网格可以提供的一组特性。但是为什么不直接在应用程序中实现它们呢?为什么要费尽心思使用代理呢?</p>
+<h2 id="为什么服务网格是一个好主意"><a href="#为什么服务网格是一个好主意" class="headerlink" title="为什么服务网格是一个好主意?"></a>为什么服务网格是一个好主意?</h2><p>虽然特性集很有趣，但服务网格的核心价值实际上并不在特性中。毕竟，我们可以在应用程序本身中直接实现这些特性。(事实上，我们稍后将看到这就是服务网格的起源。) 如果只能用一句话描述，服务网格的价值可以归结为:服务网格为您提供了一些功能，这些功能对于以一种技术栈无关的应用程序代码解耦的方式运行现代服务器端软件是至关重要的。（这里翻译为技术栈无关是我个人见解，技术栈无关也是我认为服务网格很棒的一点）</p>
+<p>让我们一点一点来。</p>
+<p>如果您正在构建一个事务性的, 服务器端应用程序连接到公网，从外界接收请求, 返回一些碎片时间性质网页应用、API服务器,和现代的大部分服务器端软件如果你建立这个系统作为一个服务集合以同步的方式交谈,如果你不断地修改该软件添加更多的功能,如果您的任务是在修改系统的同时保持系统运行，那么恭喜您，您正在构建现代的服务器端软件。上面列出的所有这些出色的功能实际上对你来说是至关重要的。应用必须可靠;它必须是安全的;你必须能够观察到它在做什么。这正是服务网格所能帮助你到的。</p>
+<p>(好吧，我在这里提出了一个观点:这种方法是构建服务器端软件的现代方法。当今世界上有些人正在建造“单体”或“响应式微服务”等不符合上述定义的东西，他们可能有不同的看法。反过来，我认为他们的观点是“错误的”——但无论如何，服务网格对他们都不是很有用。</p>
+<p>在你的服务栈中保持一致。服务网格提供的功能并不仅仅是关键的，它们适用于应用程序中的每个服务，不管服务是用什么语言编写的、使用什么框架、谁编写的、如何部署的，或者开发或部署的任何其他细节。</p>
+<p>与应用程序代码解耦。最后，服务网格不只是在整个服务栈中提供一致的特性，它还以一种不侵入代码的方式提供特性。服务网格的功能(包括配置、更新、操作、维护等的操作所有权)完全位于平台级，与应用程序代码无关。应用程序可以在不关注服务网格的情况下更改，而服务网格也可以在不关心应用程序的情况下更改。</p>
+<p>简而言之:服务网格不仅提供了重要的特性，而且以一种全局的、统一的、独立于应用程序的方式提供这些特性。因此，虽然服务网格的特性可以在服务代码中实现(即使是作为链接到每个服务的库)，但这种方法不能提供服务网格值支柱的核心的<strong>解耦</strong>和一致性。</p>
+<p>你所要做的就是添加大量的代理!我保证我们将很快讨论添加所有这些代理的操作成本。但首先，我们需要停下来，从解耦的角度来审视这一观点。</p>
+<h2 id="谁能从服务网络中受益？"><a href="#谁能从服务网络中受益？" class="headerlink" title="谁能从服务网络中受益？"></a>谁能从服务网络中受益？</h2><p>尽管有许多困难，但事实证明，为了让技术真正产生影响，它必须落地。那么谁会采用服务网格呢? 双有谁将从中受益?</p>
+<p>如果您正在构建我上面所描述的现代服务器软件，那么您可以大致将您的团队分为两个部分:应用开发者(他们从事构建业务逻辑的业务-也就是业务开发)和平台开发者(他们构建运行这些服务的内部平台-可以理解为运维)。在小型组织中，这些人员可能是相同的，但是随着组织规模的扩大，这些角色通常会得到更多的定义，甚至进一步细分。(关于devops不断变化的本质，微服务对组织的影响等等，还有很多要说的。但现在，让我们把这些描述当作一个设定的条件。)</p>
+<p>从这个角度来看，服务网格的直接受益者是平台开发者。毕竟，平台团队的目标是构建应用开发者可以在其上运行业务逻辑的内部平台，并以一种使应用开发者尽可能独立于操作化的详细信息的方式来实现。服务网格不仅提供了完成此任务的关键特性，而且还以一种不依赖于应用开发者的方式提供了这些特性。</p>
+<p>应用开发者也会受益，尽管是以一种更间接的方式。应用开发者的目标是尽可能高效地构建业务逻辑，他们需要担心的操作机制越少，就越容易做到这一点。他们可以将注意力完全放在业务逻辑问题上，并相信平台会处理其余的问题，而不必关心实现诸如重试策略或TLS之类的问题上。这也是他们的一大优势。</p>
+<p>平台和应用开发者之间解耦的组织价值怎么强调都不过分。事实上，我认为这可能是服务网格有价值的关键原因。</p>
+<p>当我们最早的Linkerd采用者之一告诉我们他们为什么要采用服务网格时，我们得出一个结论:因为它允许他们“不必与人交谈”。这是一个大公司的平台团队迁移到Kubernetes。因为他们的应用程序需要处理敏感信息，所以他们希望加密集群上的所有通信。有数百个服务和数百个开发团队，他们并不期望说服每个开发团队将TLS添加到他们的路线图中。通过安装Linkerd，他们将该特性的所有权从开发人员手中转移到了平台团队手中，对开发人员来说，这是一种强加，而对平台团队来说，这是一种顶级优先级。Linkerd与其说为他们解决了一个技术问题，不如说它解决了一个组织问题。</p>
+<p>简而言之，服务网格与其说是技术问题的解决方案，不如说是社会技术问题的解决方案。</p>
+<h2 id="服务网格是银弹吗"><a href="#服务网格是银弹吗" class="headerlink" title="服务网格是银弹吗?"></a>服务网格是银弹吗?</h2><p>当然不是!</p>
+<p>如果您查看上面列出的三类特性(可靠性、安全性和可观察性)，就会发现服务网格并不是这些领域的完整解决方案。当Linkerd知道请求是幂等的时候，它可以重试请求，但是当服务完全宕机时，它不能决定返回给用户什么——应用程序必须做出这些决定。虽然Linkerd可以报告成功率等，但它不能查看服务内部并报告内部度量指标——应用程序必须有仪表。虽然Linkerd可以“免费”实现诸如双向TLS认证之类的功能，但安全解决方案还有很多其他功能。</p>
+<p>服务网格提供的这些域中的特性子集是平台特性。这里我指的是以下特征:</p>
+<ol>
+<li> 独立于业务逻辑。计算Foo和Bar之间调用的流量延迟直方图的方法完全独立于Foo最初调用Bar的原因。</li>
+<li> 难以正确实现。Linkerd的重试是用诸如重试预算之类复杂的东西参数化的，因为简单的重试方法肯定会导致“重试风暴”和其他分布式系统故障模式。</li>
+<li> 最有效的是统一实施。只有当每个人都在这样做时，双向TLS认证的机制才真正有意义。</li>
+</ol>
+<p>因为这些特性是在代理层实现的，而不是在应用程序层，所以服务网格在平台级别而不是应用程序级别提供这些特性。不管服务是用什么语言编写的，也不管它们使用什么框架，也不管谁编写它们，也不管它们是如何实现的。独立于所有这些的代理功能，以及此功能的所有权(包括配置、更新、操作、维护等的操作所有权)完全位于平台级。</p>
+<p>服务网格的示例特性</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left">可观测性</th>
+<th align="left">可靠性</th>
+<th align="left">安全性</th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">服务网格</td>
+<td align="left">服务成功率</td>
+<td align="left">请求重试</td>
+<td align="left">双向TLS认证</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">平台</td>
+<td align="left">日志聚合</td>
+<td align="left">多副本数据集</td>
+<td align="left">静态数据加密</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">应用</td>
+<td align="left">内部特性使用的检测</td>
+<td align="left">整个组件停机时的故障处理</td>
+<td align="left">确保用户只能访问他们自己的数据</td>
+<td align="left"></td>
+</tr>
+</tbody></table>
+<p>总而言之: 服务网格并不是可靠性、可观察性或安全性的一个完整解决方案。这些领域必然涉及应用开发者、ops和SRE团队以及组织的其他部分。服务网格只能提供每个领域的一个平台层“切片”。</p>
+<h2 id="为什么服务网格现在有意义"><a href="#为什么服务网格现在有意义" class="headerlink" title="为什么服务网格现在有意义?"></a>为什么服务网格现在有意义?</h2><p>此时，您可能会对自己说:好吧，如果这个服务网格这么好，为什么我们不在10年前就这么干呢?</p>
+<p>对此有一个肤浅的回答，那就是十年前每个人都在做单体应用，所以没有人需要一个服务网格。这是真的，但我认为没有抓住重点。甚至在十年前，“微服务”作为构建大规模系统的一种可行方式的概念就被广泛讨论，并在Twitter、Facebook、谷歌和Netflix等公司公开付诸实践。一般的看法是，至少在我所接触到的行业中，微服务是构建大规模系统的“正确方式”，虽然这个过程真的有些痛苦。</p>
+<p>当然，虽然十年前就有公司在运营微服务，但他们基本上没有到处安装代理来形成服务网格。但是，如果您仔细观察，就会发现它们在做一些类似的事情:许多这些组织强制要求使用特定的内部库进行网络通信(有时戏称为“胖客户端”)。Netflix有<a href="https://github.com/Netflix/Hystrix">Hysterix</a>，谷歌有Stubby，Twitter有<a href="https://twitter.github.io/finagle/">Finagle</a>。例如，Finagle对于Twitter上的每个新服务都是必需的，它处理连接的客户端和服务器端，并实现重试、请求路由、负载平衡和检测。它在整个Twitter服务栈中提供了一致的可靠性和可观察性，并且独立于服务本身。当然，它只适用于JVM语言，而且它有一个编程模型，你必须围绕这个编程模型构建整个应用程序，但它提供的操作特性几乎与服务网格完全一样</p>
+<p>所以十年前，我们不仅有微服务，我们还有原始服务网格库，它们解决了许多与今天服务网格解决的问题相同的问题。但是我们没有服务网络。首先需要改变的是其他一些东西。</p>
+<p>这就是更深层次的答案所在，隐藏在过去十年发生的另一个不同之处:部署微服务的成本大幅降低。我上面列出的10年前公开使用微服务的公司——Twitter、Netflix、Facebook、Google等都是拥有庞大的规模和资源的公司。他们不仅有需求而且有能力构建、部署和操作重要的微服务应用程序。在Twitter由单体应用向微服务转型的过程中，投入了大量的时间和精力，这让人难以想象，而这种基础设施的调整对小公司来说基本上是不可能的。</p>
+<p>相比之下，今天的初创公司微服务与开发者的比例可能是5:1，甚至<a href="https://twitter.com/JackKleeman/status/1190407465659183104">10:1</a>，更重要的是，他们有能力应对这种情况。如果运行50个微服务对于一个5人的创业公司来说是一个可行的方法，那么很明显，微服务的使用成本降低了。<br><img src="https://upload-images.jianshu.io/upload_images/44480-faa9056f0005da52.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="image.png"></p>
+<p>采用微服务的成本的显著降低是由于一件事的结果:容器和容器编制器技术的使用。这就是为什么要改变服务网格的深层原因。使服务在操作上可行的东西与使微服务在操作上可行的东西是一样的:Kubernetes和Docker。</p>
+<p>但是，为什么? Docker解决了一个大问题: 服务打包问题。将应用程序及其(非网络)运行时依赖项打包到一个容器中，您的应用程序现在是一个插拔的单元，真正做到了一次打包，到处运行。于是我们可以轻松运行多语言的服务栈:因为执行的容器是一个原子单位, 部署和操作并不关心容器里面装的是什么,不管它是一个JVM应用Node、Go、Python还是Ruby应用。</p>
+<p>Kubernetes解决了下一个问题:现在我有一堆“可执行的东西”，我也有一堆“可以执行这些可执行的东西”(也就是机器)，我需要它们之间的映射。广义上说，你给Kubernetes一堆容器和一堆机器，它就能算出这个映射。(这当然是一个动态的、不断变化的东西，因为新的容器在系统中滚动、机器进进出出等等。但Kubernetes能解决这些问题。)</p>
+<p>一旦Kubernetes启动，运行一个服务的部署时间成本与运行10个服务的部署时间成本没有太大差别，实际上与运行100个服务的部署时间成本也没有太大差别。将其与容器结合起来，作为鼓励使用多种编程语言开发实现的打包机制，结果是大量的新应用程序可以用各种语言编写成微服务——这正是服务网格最适合的环境。</p>
+<p>最后，我们来看看为什么服务网格现在是可行的:Kubernetes为服务提供的完全相同的一致性直接适用于服务网格的操作挑战。你把代理打包在容器里，你告诉Kubernetes在哪使用代码，瞧!你得到了一个服务网格，所有的部署时机制都由Kubernetes为你处理。</p>
+<p>总结:服务网格的原因现在是有意义的,而不是10年前,Kubernetes的崛起和Docker不仅大大增加了服务网格的需求, 通过提供部署及代理机制，使得构建多种开发语言的微服务架构变得很容易了, 而且还极大地降低了运行成本。</p>
+<h2 id="为什么人们总是在谈论服务网格"><a href="#为什么人们总是在谈论服务网格" class="headerlink" title="为什么人们总是在谈论服务网格?"></a>为什么人们总是在谈论服务网格?</h2><p>高能预警:在本节中，我会“大放厥词”。</p>
+<p>你只需要搜索“服务网格”，就会遇到一个卡夫卡式的狂热f场景，充满了令人困惑的项目，毫无营养的内容，扭曲的噪音。所有闪亮的新技术都有一定程度的这种情况，但服务网格似乎有一个特别糟糕的情况。这是为什么呢?</p>
+<p>部分是我的错。我已经尽我最大的努力在传播Linkerd和服务网格，在无数的博客、播客和文章中，就像这篇一样。但我没有那么强大。要真正回答这个问题，我回到服务网格这个领域来讨论，要讨论这个话题就绕不开另外一个由谷歌、IBM和Lyft领衔开发的服务网格，名字叫做:<a href="https://istio.io/">Istio</a>。</p>
+<p>值得注意的是两件事。首先，谷歌，尤其是它背后的强大营销能力。据我估计，今天大多数了解服务网格的人都是通过Istio来了解它的。第二件值得注意的事是人们对它的接受程度有多差。很明显，我在这场竞赛中占了上风，但我尽量保持客观，在我看来，Istio在某种程度上引起了公众的强烈反对，这在开源项目中是很少见的(虽然也不是没有听说过)</p>
+<p>抛开我个人的理论不谈，我相信谷歌的参与才是服务网格领域如此夸张的真正原因。具体来说，就是 1. 谷歌大力推广Istio; 2. 其实乏善可陈; 3. Kubernetes的迅速崛起至今仍在每个人的脑海中挥之不去，这一切结合在一起，形成了一种令人陶醉的环境，在这种环境中，理性思考的能力消失了，只剩下一种奇怪的、与生俱来的狂热。</p>
+<p>当然，从Linkerd的角度来看，这是一件好事。我的意思是，现在的服务网格是一个“东西”，这很好，但在2016年Linkerd刚起步的时候并不是这样，而且真的很难引起任何人的注意。我们不再有那个问题了!但是糟糕的是，服务网格环境是如此混乱，甚至很难理解哪些项目是服务网格，更别提哪个项目最适合您了。那对每个人都不利。(当然，在某些情况下，Istio或者其它类似项目将是Linkerd之外的正确选择-但这远不是一个放之四海而皆准的解决方案。)</p>
+<p>在Linkerd方面，我们的策略是忽略噪音，继续专注于为我们的社区解决真正的问题，基本上是等待整个事情结束。炒作的程度最终会消退，我们都可以继续我们的生活。</p>
+<p>但与此同时，我们所有人都将一起经历这一切。</p>
+<h2 id="那么，作为一个谦虚的软件工程师，我应该关心服务网格吗"><a href="#那么，作为一个谦虚的软件工程师，我应该关心服务网格吗" class="headerlink" title="那么，作为一个谦虚的软件工程师，我应该关心服务网格吗?"></a>那么，作为一个谦虚的软件工程师，我应该关心服务网格吗?</h2><p>作为软件工程师，是否需要服务网格，以下是我的基本准则：</p>
+<p>如果您处于纯业务逻辑实现者的开发人员角色:不，您实际上不需要关心服务网格。我的意思是，你当然欢迎关心，但理想的服务网络不会直接影响你的生活。继续构建甜蜜的业务逻辑，让你身边的每个人都能得到报酬。</p>
+<p>如果你在一个使用Kubernetes的组织中担任平台角色:是的，你100%应该关心。除非你是采用k8纯粹一个单体应用或批处理任务(在这种情况下,我会认真问你为什么要使用k8s),你会在一个情景,在这个情景中你有很多微服务,别人写的, 所有的交谈,都绑在一起形成成一个繁复的运行时依赖,你会需要一种方法来解决这个问题。由于您使用的是Kubernetes，所以您将有几种服务网格可选，应该选哪一个必须得有一个清晰的认知。(当然，我建议从从Linkerd开始。)</p>
+<p>如果你在一个不使用Kubernetes，而是“做微服务”的组织中担任平台角色:是的，你应该关心，但这将是复杂的。当然，您可以通过在任何地方部署大量代理来获得服务网格的价值，但是Kubernetes的优点是部署模型，如果您必须亲自管理这些代理，您必须考虑投入与回报。</p>
+<p>如果您的平台是一个单体应用，那你可能不需要关心。如果您正在操作一个大型单体应用，甚至是一个单体应用的集合，它具有定义良好且不经常变化的通信模式，那么服务网格将不会带来多少收益，您可以忽略它。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>这个服务网络可能并没有“世界上最被过度炒作的技术”的头衔——这个可疑的区别可能是比特币或人工智能。也许只是前五名。但是如果你能穿透这些噪音，对于任何在Kubernetes上构建应用程序的人来说，都有一些真正的价值。</p>
+<p>最后，我希望您尝试一下Linkerd——<a href="https://linkerd.io/2/getting-started/">安装到Kubernetes集群仅需要大约60秒的时间</a>，甚至在您的笔记本上安装一个Minikube——您自己就可以清楚地看到我所说的内容。</p>
+<hr>
+<p>原文链接：<a href="https://servicemesh.io/">https://servicemesh.io/</a></p>
+]]></content>
+      <categories>
+        <category>k8s</category>
+        <category>翻译</category>
+      </categories>
+      <tags>
+        <tag>容器化</tag>
+        <tag>k8s</tag>
+      </tags>
+  </entry>
+</search>
