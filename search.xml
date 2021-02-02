@@ -96,20 +96,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Hello World</title>
-    <url>/2018/11/19/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-  </entry>
-  <entry>
     <title>prometheus如何实现配置文件动态管理</title>
     <url>/2020/12/06/prometheus%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86/</url>
     <content><![CDATA[<p>因为prometheus并不提供配置文件动态更新的API，所以使用<strong>文件</strong>作为prometheus服务发现的情况下，只能通过修改文件的方式达到更新配置的目的，<br>常规步骤如下：</p>
@@ -543,6 +529,39 @@
 <p>生活上，2020年更加魔幻：5月份知道老婆怀孕后，年中顺利卖了成都的房子，又在杭州安家落户，为了小宝宝，买了人生中第一辆车，然后年底宝宝出生，也就一年时间，实现了买房买车生小孩，成为一名更符合年龄、符合儿子、丈夫、弟弟这个角色，有开心，但不是自己想成为的那个样子，同样是没有理由，对未来，也没有一个像之前的一个面试官那样有一个非常明确的规划，只是一心要拓展自己的职业边界，提高技术内功。 </p>
 <p>2021年的关键字：<strong>聚焦</strong>、<strong>坚持</strong>、<strong>信念</strong></p>
 <p>有点期待2021年底提笔年终总结时，会活成一个更好的自己，为自己加油！</p>
+]]></content>
+  </entry>
+  <entry>
+    <title>探究golang的linkname</title>
+    <url>/2018/10/27/%E6%8E%A2%E7%A9%B6golang%E7%9A%84linkname/</url>
+    <content><![CDATA[<p>在编写golang程序的过程中，会经常有一些sleep的需求，于是我们使用<code>time.Sleep</code>函数<br>跳转到函数定义处发现这个函数定义如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; Sleep pauses the current goroutine for at least the duration d.</span><br><span class="line">&#x2F;&#x2F; A negative or zero duration causes Sleep to return immediately.</span><br><span class="line">func Sleep(d Duration)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>没错，只有定义没有实现？显然不是，函数的实现在<code>runtime/time.go</code></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; timeSleep puts the current goroutine to sleep for at least ns nanoseconds.</span><br><span class="line">&#x2F;&#x2F;go:linkname timeSleep time.Sleep</span><br><span class="line">func timeSleep(ns int64) &#123;</span><br><span class="line">	if ns &lt;&#x3D; 0 &#123;</span><br><span class="line">		return</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	gp :&#x3D; getg()</span><br><span class="line">	t :&#x3D; gp.timer</span><br><span class="line">	if t &#x3D;&#x3D; nil &#123;</span><br><span class="line">		t &#x3D; new(timer)</span><br><span class="line">		gp.timer &#x3D; t</span><br><span class="line">	&#125;</span><br><span class="line">	*t &#x3D; timer&#123;&#125;</span><br><span class="line">	t.when &#x3D; nanotime() + ns</span><br><span class="line">	t.f &#x3D; goroutineReady</span><br><span class="line">	t.arg &#x3D; gp</span><br><span class="line">	tb :&#x3D; t.assignBucket()</span><br><span class="line">	lock(&amp;tb.lock)</span><br><span class="line">	if !tb.addtimerLocked(t) &#123;</span><br><span class="line">		unlock(&amp;tb.lock)</span><br><span class="line">		badTimer()</span><br><span class="line">	&#125;</span><br><span class="line">	goparkunlock(&amp;tb.lock, waitReasonSleep, traceEvGoSleep, 2)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看看<code>go:linkname</code>的<a href="https://golang.org/cmd/compile/">官方说明</a></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;go:linkname localname importpath.name</span><br><span class="line"></span><br><span class="line">The &#x2F;&#x2F;go:linkname directive instructs the compiler to use “importpath.name” as the object file symbol name for the variable or function declared as “localname” in the source code. Because this directive can subvert the type system and package modularity, it is only enabled in files that have imported &quot;unsafe&quot;.</span><br></pre></td></tr></table></figure>
+<p>这个指令告诉编译器为当前源文件中私有函数或者变量在编译时链接到指定的方法或变量。因为这个指令破坏了类型系统和包的模块化，因此在使用时必须导入<code>unsafe</code>包，所以可以看到<code>runtime/time.go</code>文件是有导入<code>unsafe</code>包的。<br>我们看到<code>go:linkname</code>的格式，这里<code>localname</code>自然对应<code>timeSleep</code>, <code>importpath.name</code>就对应<code>time.Sleep</code>,但为什么要这么做呢？<br>我们知道<code>time.Sleep</code>在<code>time</code>包里，是可导出，而<code>timeSleep</code>在<code>runtime</code>包里面，是不可导出了，那么<code>go:linkname</code>的意义在于让<code>time</code>可以调用<code>runtime</code>中原本不可导出的函数，有点<code>hack</code>，举个栗子：</p>
+<p>目录结构如下</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  demo git:(master) ✗ tree</span><br><span class="line">.</span><br><span class="line">├── linkname</span><br><span class="line">│   └── a.go</span><br><span class="line">├── main.go</span><br><span class="line">└── outer</span><br><span class="line">    └── world.go</span><br></pre></td></tr></table></figure>
+<p>文件内容 a.go</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package linkname</span><br><span class="line"></span><br><span class="line">import _ &quot;unsafe&quot;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;go:linkname hello examples&#x2F;demo&#x2F;outer.World</span><br><span class="line">func hello() &#123;</span><br><span class="line">	println(&quot;hello,world!&quot;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>world.go</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package outer</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	_ &quot;examples&#x2F;demo&#x2F;linkname&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">func World()</span><br></pre></td></tr></table></figure>
+<p>main.go</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">	&quot;examples&#x2F;demo&#x2F;outer&quot;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">	outer.World()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line"># examples&#x2F;demo&#x2F;outer</span><br><span class="line">outer&#x2F;world.go:7:6: missing function body</span><br></pre></td></tr></table></figure>
+<p>难道理解错了，这是因为<code>go build</code>默认加会加上<code>-complete</code>参数，这个参数检查到<code>World()</code>没有方法体，在<code>outer</code>文件夹中增加一个空的<code>.s</code>文件即可绕过这个限制</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">➜  demo git:(master) ✗ tree</span><br><span class="line">.</span><br><span class="line">├── linkname</span><br><span class="line">│   └── a.go</span><br><span class="line">├── main.go</span><br><span class="line">└── outer</span><br><span class="line">    ├── i.s</span><br><span class="line">    └── world.go</span><br></pre></td></tr></table></figure>
+<p>输出如下：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">hello,world!</span><br></pre></td></tr></table></figure>
+<p>参考：</p>
+<ul>
+<li><a href="https://forum.golangbridge.org/t/implementation-of-time-sleep/2637">https://forum.golangbridge.org/t/implementation-of-time-sleep/2637</a></li>
+<li><a href="https://github.com/golang/go/issues/15006">https://github.com/golang/go/issues/15006</a></li>
+<li><a href="https://golang.org/cmd/compile/">https://golang.org/cmd/compile/</a></li>
+<li><a href="https://github.com/golang/go/blob/master/src/runtime/time.go#L47">https://github.com/golang/go/blob/master/src/runtime/time.go#L47</a></li>
+</ul>
 ]]></content>
   </entry>
   <entry>
